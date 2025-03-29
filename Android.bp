@@ -54,7 +54,6 @@ license {
 
 cc_defaults {
     name: "skia_arch_defaults",
-    cpp_std: "gnu++17",
     arch: {
         arm: {
             srcs: [],
@@ -2587,6 +2586,7 @@ cc_defaults {
         "gm/surface.cpp",
         "gm/swizzle.cpp",
         "gm/tablecolorfilter.cpp",
+        "gm/tablemaskfilter.cpp",
         "gm/tallstretchedbitmaps.cpp",
         "gm/testgradient.cpp",
         "gm/texelsubset.cpp",
@@ -3777,6 +3777,7 @@ cc_defaults {
         "gm/surface.cpp",
         "gm/swizzle.cpp",
         "gm/tablecolorfilter.cpp",
+        "gm/tablemaskfilter.cpp",
         "gm/tallstretchedbitmaps.cpp",
         "gm/testgradient.cpp",
         "gm/texelsubset.cpp",
