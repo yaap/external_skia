@@ -776,14 +776,12 @@ func (b *jobBuilder) deriveCompileTaskName() string {
 			}
 		} else if b.matchOs("Win") {
 			task_os = "Win"
-		} else if b.compiler("GCC") {
-			// GCC compiles are now on a Docker container. We use the same OS and
-			// version to compile as to test.
-			ec = append(ec, "Docker")
 		} else if b.extraConfig("WasmGMTests") {
 			task_os = DEFAULT_OS_LINUX_GCE
-		} else if b.os("Ubuntu18") {
-			task_os = "Debian10" // TODO(borenet): Remove once these machines update to 24.04.
+		} else if b.compiler("GCC") || b.os("Ubuntu18") {
+			// GCC compiles are now on a Docker container. We use the same OS and
+			// version to compile as to test.
+			ec = append([]string{"Docker"}, ec...)
 		} else if b.matchOs("Mac") {
 			task_os = "Mac"
 		}
@@ -875,7 +873,6 @@ func (b *taskBuilder) defaultSwarmDimensions() {
 			"Android12":   "Android",
 			"ChromeOS":    "ChromeOS",
 			"Debian9":     DEFAULT_OS_LINUX_GCE, // Runs in Deb9 Docker.
-			"Debian10":    DEBIAN_10_OS,
 			"Debian11":    DEBIAN_11_OS,
 			"Mac":         DEFAULT_OS_MAC,
 			"Mac10.15.1":  "Mac-10.15.1",
@@ -900,8 +897,9 @@ func (b *taskBuilder) defaultSwarmDimensions() {
 		if !ok {
 			log.Fatalf("Entry %q not found in OS mapping.", os)
 		}
-		if os == "Debian11" && b.extraConfig("Docker") {
+		if (os == "Debian11" || os == "Ubuntu18") && b.extraConfig("Docker") {
 			d["os"] = DEFAULT_OS_LINUX_GCE
+			d["gce"] = "1"
 		}
 		if os == "Win10" && b.parts["model"] == "Golo" {
 			// ChOps-owned machines have Windows 10 22H2.
@@ -974,50 +972,56 @@ func (b *taskBuilder) defaultSwarmDimensions() {
 			}
 			d["device"] = device
 		} else if b.cpu() || b.extraConfig("CanvasKit", "Docker", "SwiftShader") {
-			modelMapping, ok := map[string]map[string]string{
+			modelMapping, ok := map[string]map[string]map[string]string{
 				"AppleM1": {
-					"MacMini9.1": "arm64-64-Apple_M1",
+					"MacMini9.1": {"cpu": "arm64-64-Apple_M1"},
 				},
 				"AppleM3": {
-					"MacBookPro15.3": "arm64-64-Apple_M3",
+					"MacBookPro15.3": {"cpu": "arm64-64-Apple_M3"},
 				},
 				"AppleIntel": {
-					"MacBookPro15.1": "x86-64",
-					"MacBookPro16.2": "x86-64",
+					"MacBookPro15.1": {"cpu": "x86-64"},
+					"MacBookPro16.2": {"cpu": "x86-64"},
 				},
 				"AVX": {
-					"VMware7.1": "x86-64",
+					"VMware7.1": {"cpu": "x86-64"},
 				},
 				"AVX2": {
-					"GCE":            "x86-64-Haswell_GCE",
-					"Golo":           "x86-64-E3-1230_v5",
-					"MacBookAir7.2":  "x86-64-i5-5350U",
-					"MacBookPro11.5": "x86-64-i7-4870HQ",
-					"MacMini7.1":     "x86-64-i5-4278U",
-					"MacMini8.1":     "x86-64-i7-8700B",
-					"NUC5i7RYH":      "x86-64-i7-5557U",
-					"NUC9i7QN":       "x86-64-i7-9750H",
-					"NUC11TZi5":      "x86-64-i5-1135G7",
+					"GCE":            {"cpu": "x86-64-Haswell_GCE"},
+					"Golo":           {"cpu": "x86-64-E3-1230_v5"},
+					"MacBookAir7.2":  {"cpu": "x86-64-i5-5350U"},
+					"MacBookPro11.5": {"cpu": "x86-64-i7-4870HQ"},
+					"MacMini7.1":     {"cpu": "x86-64-i5-4278U"},
+					"MacMini8.1":     {"cpu": "x86-64-i7-8700B"},
+					"NUC5i7RYH":      {"cpu": "x86-64-i7-5557U"},
+					"NUC9i7QN":       {"cpu": "x86-64-i7-9750H"},
+					// Unfortunately, these machines don't have a more-specific
+					// CPU dimension we can use. However, they do have integrated
+					// GPUs whose models differ from our other machines, so we
+					// specify the GPU dimension even when running CPU tests.
+					"NUC11TZi5": {"cpu": "x86-64", "gpu": "8086:9a49"},
 				},
 				"AVX512": {
-					"GCE":  "x86-64-Skylake_GCE",
-					"Golo": "Intel64_Family_6_Model_85_Stepping_7__GenuineIntel",
+					"GCE":  {"cpu": "x86-64-Skylake_GCE"},
+					"Golo": {"cpu": "Intel64_Family_6_Model_85_Stepping_7__GenuineIntel"},
 				},
 				"Rome": {
-					"GCE": "x86-64",
+					"GCE": {"cpu": "x86-64"},
 				},
 				"SwiftShader": {
-					"GCE": "x86-64-Haswell_GCE",
+					"GCE": {"cpu": "x86-64-Haswell_GCE"},
 				},
 			}[b.parts["cpu_or_gpu_value"]]
 			if !ok {
 				log.Fatalf("Entry %q not found in CPU mapping.", b.parts["cpu_or_gpu_value"])
 			}
-			cpu, ok := modelMapping[b.parts["model"]]
+			dims, ok := modelMapping[b.parts["model"]]
 			if !ok {
 				log.Fatalf("Entry %q not found in %q model mapping.", b.parts["model"], b.parts["cpu_or_gpu_value"])
 			}
-			d["cpu"] = cpu
+			for k, v := range dims {
+				d[k] = v
+			}
 			if b.model("GCE") && b.matchOs("Debian") {
 				d["os"] = DEFAULT_OS_LINUX_GCE
 			}
@@ -1034,9 +1038,9 @@ func (b *taskBuilder) defaultSwarmDimensions() {
 					"GTX1660":       "10de:2184-31.0.15.4601",
 					"IntelHD4400":   "8086:0a16-20.19.15.4963",
 					"IntelIris540":  "8086:1926-31.0.101.2115",
-					"IntelIris6100": "8086:162b-20.19.15.4963",
+					"IntelIris6100": "8086:162b-20.19.15.5171",
 					"IntelIris655":  "8086:3ea5-26.20.100.7463",
-					"IntelIrisXe":   "8086:9a49-32.0.101.5972",
+					"IntelIrisXe":   "8086:9a49-31.0.101.5333",
 					"RadeonHD7770":  "1002:683d-26.20.13031.18002",
 					"RadeonR9M470X": "1002:6646-26.20.13031.18002",
 					"QuadroP400":    "10de:1cb3-31.0.15.5222",
@@ -1069,10 +1073,6 @@ func (b *taskBuilder) defaultSwarmDimensions() {
 					log.Fatalf("Entry %q not found in Linux GPU mapping.", b.parts["cpu_or_gpu_value"])
 				}
 				d["gpu"] = gpu
-				if b.parts["cpu_or_gpu_value"] == "IntelIrisXe" {
-					// The Intel Iris Xe devices are Debian 11.3.
-					d["os"] = "Debian-bookworm/sid"
-				}
 			} else if b.matchOs("Mac") {
 				gpu, ok := map[string]string{
 					"AppleM1":             "AppleM1",
@@ -1143,18 +1143,7 @@ func (b *taskBuilder) defaultSwarmDimensions() {
 			}
 		}
 	} else {
-		if b.matchOs("Debian10") {
-			// The old Linux GCE build machines are running 10.3, not 10.10.
-			// TODO(borenet): Remove this once we stop running on these VMs.
-			dims := b.getLinuxGceDimensions(MACHINE_TYPE_LARGE)
-			dims["os"] = "Debian-10.3"
-			for k, v := range dims {
-				d[k] = v
-			}
-		} else if d["os"] != "Ubuntu-18.04" {
-			// We don't have Ubuntu 18 VMs in GCE.
-			d["gpu"] = "none"
-		}
+		d["gpu"] = "none"
 		if d["os"] == DEFAULT_OS_LINUX_GCE {
 			if b.extraConfig("CanvasKit", "CMake", "Docker", "PathKit") || b.role("BuildStats", "CodeSize") {
 				b.linuxGceDimensions(MACHINE_TYPE_MEDIUM)
@@ -1462,15 +1451,20 @@ func (b *jobBuilder) recreateSKPs() {
 
 		b.cas(CAS_RECREATE_SKPS)
 		// We use a build task To get DM.
-		b.dep("Build-Debian10-Clang-x86_64-Release")
+		b.dep("Build-Ubuntu24.04-Clang-x86_64-Release")
 		b.cmd(cmd...)
 		b.usesLUCIAuth()
 		b.serviceAccount(b.cfg.ServiceAccountRecreateSKPs)
 		b.dimension(
-			"pool:SkiaCT",
-			// TODO(borenet): Update the SkiaCT pool to use Ubuntu24.04 and
-			// update this dimension and the dependent build task above.
-			"os:Debian-10.3",
+			"pool:Skia",
+			"cpu:x86-64-Haswell_GCE",
+			// TODO(borenet): It'd be much faster to run this on n1-highcpu-64,
+			// for which we do have have capacity, but the task gets OOM-killed
+			// while building Chrome, presumably because the ratio of RAM to CPU
+			// cores is too low.
+			"machine_type:n1-standard-16",
+			"gce:1",
+			fmt.Sprintf("os:%s", DEFAULT_OS_LINUX_GCE),
 		)
 		b.usesGo()
 		b.cache(CACHES_WORKDIR...)
