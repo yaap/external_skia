@@ -491,6 +491,20 @@ static void packA8ToA1(SkMaskBuilder& dstMask, const uint8_t* src, size_t srcRB)
     }
 }
 
+void SkScalerContext::generateImageFromPath(const SkGlyph& glyph, void* imageBuffer) {
+    SkASSERT(glyph.setPathHasBeenCalled());
+    const SkPath* devPath = glyph.path();
+    SkASSERT_RELEASE(devPath);
+    SkMaskBuilder mask(static_cast<uint8_t*>(imageBuffer),
+                       glyph.iRect(), glyph.rowBytes(), glyph.maskFormat());
+    SkASSERT(SkMask::kARGB32_Format != mask.fFormat);
+    const bool doBGR = SkToBool(fRec.fFlags & SkScalerContext::kLCD_BGROrder_Flag);
+    const bool doVert = SkToBool(fRec.fFlags & SkScalerContext::kLCD_Vertical_Flag);
+    const bool a8LCD = SkToBool(fRec.fFlags & SkScalerContext::kGenA8FromLCD_Flag);
+    const bool hairline = glyph.pathIsHairline();
+    GenerateImageFromPath(mask, *devPath, fPreBlend, doBGR, doVert, a8LCD, hairline);
+}
+
 void SkScalerContext::GenerateImageFromPath(
     SkMaskBuilder& dstMask, const SkPath& path, const SkMaskGamma::PreBlend& maskPreBlend,
     const bool doBGR, const bool verticalLCD, const bool a8FromLCD, const bool hairline)
@@ -861,7 +875,7 @@ void SkScalerContextRec::getSingleMatrix(SkMatrix* m) const {
 }
 
 bool SkScalerContextRec::computeMatrices(PreMatrixScale preMatrixScale, SkVector* s, SkMatrix* sA,
-                                         SkMatrix* GsA, SkMatrix* G_inv, SkMatrix* A_out)
+                                         SkMatrix* GsA, SkMatrix* G_inv, SkMatrix* A_out) const
 {
     // A is the 'total' matrix.
     SkMatrix A;
