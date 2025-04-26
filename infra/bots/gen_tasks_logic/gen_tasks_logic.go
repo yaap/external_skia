@@ -62,7 +62,7 @@ const (
 	DEBIAN_10_OS         = "Debian-10.10"
 	DEFAULT_OS_LINUX_GCE = UBUNTU_24_04_OS
 	DEFAULT_OS_MAC       = "Mac-14.5"
-	DEFAULT_OS_WIN_GCE   = "Windows-11-22631.5039"
+	DEFAULT_OS_WIN_GCE   = "Windows-11-22631"
 	UBUNTU_20_04_OS      = "Ubuntu-20.04"
 	UBUNTU_22_04_OS      = "Ubuntu-22.04"
 	UBUNTU_24_04_OS      = "Ubuntu-24.04"
@@ -840,6 +840,7 @@ func (b *taskBuilder) swarmDimensions() {
 var androidDeviceInfos = map[string][]string{
 	"AndroidOne":      {"sprout", "MOB30Q"},
 	"GalaxyS7_G930FD": {"herolte", "R16NW"}, // This is Oreo.
+	"GalaxyS9":        {"exynos9810", "QP1A.190711.020"},
 	"GalaxyS20":       {"exynos990", "QP1A.190711.020"},
 	"GalaxyS24":       {"pineapple", "UP1A.231005.007"},
 	"JioNext":         {"msm8937", "RKQ1.210602.002"},
