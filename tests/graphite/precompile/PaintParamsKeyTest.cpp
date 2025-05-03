@@ -86,6 +86,9 @@ constexpr uint32_t kDefaultSeed = 0;
 
 using namespace skgpu::graphite;
 using namespace skiatest::graphite;
+using PrecompileShaders::GradientShaderFlags;
+using PrecompileShaders::ImageShaderFlags;
+using PrecompileShaders::YUVImageShaderFlags;
 
 namespace {
 
@@ -752,20 +755,20 @@ std::pair<sk_sp<SkShader>, sk_sp<PrecompileShader>> create_gradient_shader(
             s = SkGradientShader::MakeLinear(kPts,
                                              colors, /* colorSpace= */ nullptr, kOffsets, numStops,
                                              tm, interpolation, lmPtr);
-            o = PrecompileShaders::LinearGradient(interpolation);
+            o = PrecompileShaders::LinearGradient(GradientShaderFlags::kAll, interpolation);
             break;
         case SkShaderBase::GradientType::kRadial:
             s = SkGradientShader::MakeRadial(/* center= */ {0, 0}, /* radius= */ 100,
                                              colors, /* colorSpace= */ nullptr, kOffsets, numStops,
                                              tm, interpolation, lmPtr);
-            o = PrecompileShaders::RadialGradient(interpolation);
+            o = PrecompileShaders::RadialGradient(GradientShaderFlags::kAll, interpolation);
             break;
         case SkShaderBase::GradientType::kSweep:
             s = SkGradientShader::MakeSweep(/* cx= */ 0, /* cy= */ 0,
                                             colors, /* colorSpace= */ nullptr, kOffsets, numStops,
                                             tm, /* startAngle= */ 0, /* endAngle= */ 359,
                                             interpolation, lmPtr);
-            o = PrecompileShaders::SweepGradient(interpolation);
+            o = PrecompileShaders::SweepGradient(GradientShaderFlags::kAll, interpolation);
             break;
         case SkShaderBase::GradientType::kConical:
             s = SkGradientShader::MakeTwoPointConical(/* start= */ {100, 100},
@@ -775,7 +778,8 @@ std::pair<sk_sp<SkShader>, sk_sp<PrecompileShader>> create_gradient_shader(
                                                       colors,
                                                       /* colorSpace= */ nullptr,
                                                       kOffsets, numStops, tm, interpolation, lmPtr);
-            o = PrecompileShaders::TwoPointConicalGradient(interpolation);
+            o = PrecompileShaders::TwoPointConicalGradient(GradientShaderFlags::kAll,
+                                                           interpolation);
             break;
         case SkShaderBase::GradientType::kNone:
             SkDEBUGFAIL("Gradient shader says its type is none");
@@ -824,7 +828,8 @@ std::pair<sk_sp<SkShader>, sk_sp<PrecompileShader>> create_image_shader(SkRandom
     SkTileMode tmY = random_tilemode(rand);
 
     std::vector<SkTileMode> precompileTileModes =
-            (tmX == tmY) ? std::vector<SkTileMode>{tmX} : std::vector<SkTileMode>{};
+            (tmX == tmY) ? std::vector<SkTileMode>{ tmX }
+                         : std::vector<SkTileMode>{ SkTileMode::kClamp, SkTileMode::kRepeat };
 
     SkMatrix lmStorage;
     SkMatrix* lmPtr = random_local_matrix(rand, &lmStorage);
@@ -839,24 +844,32 @@ std::pair<sk_sp<SkShader>, sk_sp<PrecompileShader>> create_image_shader(SkRandom
         case 0: {
             // Non-subset image.
             s = SkShaders::Image(std::move(image), tmX, tmY, SkSamplingOptions(), lmPtr);
-            o = PrecompileShaders::Image({ colorInfo }, precompileTileModes);
+            o = PrecompileShaders::Image(ImageShaderFlags::kAll,
+                                         { colorInfo },
+                                         precompileTileModes);
         } break;
         case 1: {
             // Subset image.
             const SkRect subset = SkRect::MakeWH(image->width() / 2, image->height() / 2);
             s = SkImageShader::MakeSubset(
                     std::move(image), subset, tmX, tmY, SkSamplingOptions(), lmPtr);
-            o = PrecompileShaders::Image({ colorInfo }, precompileTileModes);
+            o = PrecompileShaders::Image(ImageShaderFlags::kAll,
+                                         { colorInfo },
+                                         precompileTileModes);
         } break;
         case 2: {
             // Cubic-sampled image.
             s = SkShaders::Image(std::move(image), tmX, tmY, SkCubicResampler::Mitchell(), lmPtr);
-            o = PrecompileShaders::Image({ colorInfo }, precompileTileModes);
+            o = PrecompileShaders::Image(ImageShaderFlags::kAll,
+                                         { colorInfo },
+                                         precompileTileModes);
         } break;
         default: {
             // Raw image draw.
             s = SkShaders::RawImage(std::move(image), tmX, tmY, SkSamplingOptions(), lmPtr);
-            o = PrecompileShaders::RawImage({ colorInfo }, precompileTileModes);
+            o = PrecompileShaders::RawImage(ImageShaderFlags::kExcludeCubic,
+                                            { colorInfo },
+                                            precompileTileModes);
         } break;
     }
 
@@ -890,7 +903,9 @@ std::pair<sk_sp<SkShader>, sk_sp<PrecompileShader>> create_yuv_image_shader(SkRa
         s = SkShaders::Image(std::move(yuvImage), tmX, tmY, samplingOptions, lmPtr);
     }
 
-    o = PrecompileShaders::YUVImage({ colorInfo }, useCubic);
+    o = PrecompileShaders::YUVImage(useCubic ? YUVImageShaderFlags::kCubicSampling
+                                             : YUVImageShaderFlags::kExcludeCubic,
+                                    { colorInfo });
 
     return { s, o };
 }
@@ -1944,9 +1959,9 @@ void extract_vs_build_subtest(skiatest::Reporter* reporter,
         Coverage coverage = coverageOptions[rand->nextULessThan(3)];
 
         const SkBlenderBase* blender = as_BB(paint.getBlender());
-        bool dstReadRequired = blender ? IsDstReadRequired(recorder->priv().caps(),
-                                                           blender->asBlendMode(),
-                                                           coverage)
+        bool dstReadRequired = blender ? !CanUseHardwareBlending(recorder->priv().caps(),
+                                                                 blender->asBlendMode(),
+                                                                 coverage)
                                        : false;
 
         // In the normal API this modification happens in SkDevice::clipShader()
