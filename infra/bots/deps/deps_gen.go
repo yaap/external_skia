@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "d4c83ace2cdc63ccd7199d881029fbaf846ed0f5",
+		Version: "b729fb74e68bb2b3db6c95067f4ffc1e0c25bc07",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -249,7 +249,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
 		Id:      "swiftshader.googlesource.com/SwiftShader",
-		Version: "9dd03f2e4b037fdd9caad8d10c7d9b7c8bde4998",
+		Version: "930d46d31b5d637f313fd5ef55da2bbf053c26c1",
 		Path:    "third_party/externals/swiftshader",
 	},
 }
