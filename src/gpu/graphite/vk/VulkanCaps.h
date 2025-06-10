@@ -143,6 +143,8 @@ private:
         bool fExtendedDynamicState = false;
         // From VkPhysicalDeviceExtendedDynamicState2FeaturesEXT or Vulkan 1.3 (no features):
         bool fExtendedDynamicState2 = false;
+        // From VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT:
+        bool fVertexInputDynamicState = false;
     };
     EnabledFeatures getEnabledFeatures(const VkPhysicalDeviceFeatures2* features,
                                        uint32_t physicalDeviceVersion);
@@ -185,6 +187,10 @@ private:
             const TextureInfo& srcTextureInfo,
             SkColorType dstColorType) const override;
 
+    // Encode the parts of the render pass desc that is relevant to pipelines; this excludes all the
+    // things that make the render pass compatible.
+    uint32_t getRenderPassDescKeyForPipeline(const RenderPassDesc&) const;
+
     // Struct that determines and stores which sample count quantities a VkFormat supports.
     struct SupportedSampleCounts {
         void initSampleCounts(const skgpu::VulkanInterface*,
@@ -195,7 +201,7 @@ private:
 
         bool isSampleCountSupported(int requestedCount) const;
 
-        SkTDArray<int> fSampleCounts;
+        VkSampleCountFlags fSampleCounts;
     };
 
     // Struct that determines and stores useful information about VkFormats.

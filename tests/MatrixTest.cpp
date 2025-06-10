@@ -237,7 +237,7 @@ static void test_matrix_min_max_scale(skiatest::Reporter* reporter) {
     success = perspX.getMinMaxScales(scales);
     REPORTER_ASSERT(reporter, !success);
 
-    // skbug.com/4718
+    // skbug.com/40035872
     SkMatrix big;
     big.setAll(2.39394089e+36f, 8.85347779e+36f, 9.26526204e+36f,
                3.9159619e+36f, 1.44823453e+37f, 1.51559342e+37f,
@@ -245,7 +245,7 @@ static void test_matrix_min_max_scale(skiatest::Reporter* reporter) {
     success = big.getMinMaxScales(scales);
     REPORTER_ASSERT(reporter, !success);
 
-    // skbug.com/4718
+    // skbug.com/40035872
     SkMatrix givingNegativeNearlyZeros;
     givingNegativeNearlyZeros.setAll(0.00436534f, 0.114138f, 0.37141f,
                                      0.00358857f, 0.0936228f, -0.0174198f,
@@ -307,7 +307,7 @@ static void test_matrix_min_max_scale(skiatest::Reporter* reporter) {
                 continue;
             }
         }
-        mat.mapVectors(vectors, std::size(vectors));
+        mat.mapVectors(vectors);
         for (size_t i = 0; i < std::size(vectors); ++i) {
             SkScalar d = vectors[i].length();
             REPORTER_ASSERT(reporter, d / maxScale < gVectorScaleTol);
@@ -696,7 +696,7 @@ static void test_matrix_homogeneous(skiatest::Reporter* reporter) {
     {
     mat.reset();
     SkPoint3 dst[kTripleCount];
-    mat.mapHomogeneousPoints(dst, randTriples, kTripleCount);
+    mat.mapHomogeneousPoints(dst, randTriples);
     REPORTER_ASSERT(reporter, point3_array_nearly_equal_relative(randTriples, dst, kTripleCount));
     }
 
@@ -705,7 +705,7 @@ static void test_matrix_homogeneous(skiatest::Reporter* reporter) {
     {
     mat.setAll(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
     SkPoint3 dst[kTripleCount];
-    mat.mapHomogeneousPoints(dst, randTriples, kTripleCount);
+    mat.mapHomogeneousPoints(dst, randTriples);
     for (int i = 0; i < kTripleCount; ++i) {
         REPORTER_ASSERT(reporter, point3_array_nearly_equal_relative(&dst[i], &zeros, 1));
     }
@@ -714,25 +714,22 @@ static void test_matrix_homogeneous(skiatest::Reporter* reporter) {
     // zero point
     {
     for (int i = 0; i < kMatrixCount; ++i) {
-        SkPoint3 dst;
-        mats[i].mapHomogeneousPoints(&dst, &zeros, 1);
+        SkPoint3 dst = mats[i].mapHomogeneousPoint(zeros);
         REPORTER_ASSERT(reporter, point3_array_nearly_equal_relative(&dst, &zeros, 1));
     }
     }
 
-    // doesn't crash with null dst, src, count == 0
+    // doesn't crash with empty spans
     {
-    mats[0].mapHomogeneousPoints(nullptr, (const SkPoint3*)nullptr, 0);
+        mats[0].mapHomogeneousPoints({}, {});
     }
 
     // uniform scale of point
     {
     mat.setScale(kScale0, kScale0);
-    SkPoint3 dst;
     SkPoint3 src = {randTriples[0].fX, randTriples[0].fY, 1.f};
-    SkPoint pnt;
-    pnt.set(src.fX, src.fY);
-    mat.mapHomogeneousPoints(&dst, &src, 1);
+    SkPoint pnt = {src.fX, src.fY};
+    SkPoint3 dst = mat.mapHomogeneousPoint(src);
     mat.mapPoints(&pnt, &pnt, 1);
     REPORTER_ASSERT(reporter, SkScalarNearlyEqual(dst.fX, pnt.fX));
     REPORTER_ASSERT(reporter, SkScalarNearlyEqual(dst.fY, pnt.fY));
@@ -742,11 +739,10 @@ static void test_matrix_homogeneous(skiatest::Reporter* reporter) {
     // rotation of point
     {
     mat.setRotate(kRotation0);
-    SkPoint3 dst;
     SkPoint3 src = {randTriples[0].fX, randTriples[0].fY, 1.f};
     SkPoint pnt;
     pnt.set(src.fX, src.fY);
-    mat.mapHomogeneousPoints(&dst, &src, 1);
+    SkPoint3 dst = mat.mapHomogeneousPoint(src);
     mat.mapPoints(&pnt, &pnt, 1);
     REPORTER_ASSERT(reporter, SkScalarNearlyEqual(dst.fX, pnt.fX));
     REPORTER_ASSERT(reporter, SkScalarNearlyEqual(dst.fY, pnt.fY));
@@ -758,11 +754,10 @@ static void test_matrix_homogeneous(skiatest::Reporter* reporter) {
     mat.setRotate(kRotation1);
     mat.postScale(kScale0, kScale0);
     mat.postRotate(kRotation0);
-    SkPoint3 dst;
     SkPoint3 src = {randTriples[0].fX, randTriples[0].fY, 1.f};
     SkPoint pnt;
     pnt.set(src.fX, src.fY);
-    mat.mapHomogeneousPoints(&dst, &src, 1);
+    SkPoint3 dst = mat.mapHomogeneousPoint(src);
     mat.mapPoints(&pnt, &pnt, 1);
     REPORTER_ASSERT(reporter, SkScalarNearlyEqual(dst.fX, pnt.fX));
     REPORTER_ASSERT(reporter, SkScalarNearlyEqual(dst.fY, pnt.fY));
@@ -773,8 +768,7 @@ static void test_matrix_homogeneous(skiatest::Reporter* reporter) {
     {
     for (int i = 0; i < kMatrixCount; ++i) {
         for (int j = 0; j < kTripleCount; ++j) {
-            SkPoint3 dst;
-            mats[i].mapHomogeneousPoints(&dst, &randTriples[j], 1);
+            SkPoint3 dst = mats[i].mapHomogeneousPoint(randTriples[j]);
             REPORTER_ASSERT(reporter, naive_homogeneous_mapping(mats[i], randTriples[j], dst));
         }
     }
@@ -820,7 +814,7 @@ static bool check_decompScale(const SkMatrix& original) {
     SkMatrix scaleMat = SkMatrix::Scale(scale.width(), scale.height());
 
     // Note, we intend the decomposition to be applied in the order scale and then remainder but,
-    // due to skbug.com/7211, the order is reversed!
+    // due to skbug.com/40038455, the order is reversed!
     scaleMat.mapPoints(v2, testPts, kNumPoints);
     remaining.mapPoints(v2, kNumPoints);
 
@@ -1075,7 +1069,7 @@ DEF_TEST(Matrix_maprects, r) {
 }
 
 DEF_TEST(Matrix_mapRect_skbug12335, r) {
-    // Stripped down test case from skbug.com/12335. Essentially, the corners of this rect would
+    // Stripped down test case from skbug.com/40043416. Essentially, the corners of this rect would
     // map to homogoneous coords with very small w's (below the old value of kW0PlaneDistance) and
     // so they would be clipped "behind" the plane, resulting in an empty mapped rect. Coordinates
     // with positive that wouldn't overflow when divided by w should still be included in the mapped
