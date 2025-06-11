@@ -1161,6 +1161,7 @@ gensrcs {
 
 cc_library_static {
     name: "libskia_skcms",
+    host_supported: true,
     srcs: [
         "modules/skcms/skcms.cc",
         "modules/skcms/src/skcms_TransformBaseline.cc",
@@ -3301,6 +3302,7 @@ cc_defaults {
         "tests/ShaderOpacityTest.cpp",
         "tests/ShaderTest.cpp",
         "tests/ShadowTest.cpp",
+        "tests/SimplifyPaintTest.cpp",
         "tests/SizeTest.cpp",
         "tests/SkBase64Test.cpp",
         "tests/SkBlockAllocatorTest.cpp",
@@ -5241,6 +5243,7 @@ cc_defaults {
         "tests/ShaderOpacityTest.cpp",
         "tests/ShaderTest.cpp",
         "tests/ShadowTest.cpp",
+        "tests/SimplifyPaintTest.cpp",
         "tests/SizeTest.cpp",
         "tests/SkBase64Test.cpp",
         "tests/SkBlockAllocatorTest.cpp",

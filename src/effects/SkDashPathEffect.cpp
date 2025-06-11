@@ -19,7 +19,6 @@
 #include "include/private/base/SkFloatingPoint.h"
 #include "include/private/base/SkMalloc.h"
 #include "include/private/base/SkTemplates.h"
-#include "include/private/base/SkTo.h"
 #include "src/core/SkPathEffectBase.h"
 #include "src/core/SkReadBuffer.h"
 #include "src/core/SkWriteBuffer.h"
@@ -386,7 +385,7 @@ SkPathEffectBase::DashType SkDashImpl::asADash(DashInfo* info) const {
 
 void SkDashImpl::flatten(SkWriteBuffer& buffer) const {
     buffer.writeScalar(fPhase);
-    buffer.writeScalarArray(fIntervals, fCount);
+    buffer.writeScalarArray({fIntervals, fCount});
 }
 
 sk_sp<SkFlattenable> SkDashImpl::CreateProc(SkReadBuffer& buffer) {
@@ -399,17 +398,17 @@ sk_sp<SkFlattenable> SkDashImpl::CreateProc(SkReadBuffer& buffer) {
     }
 
     AutoSTArray<32, SkScalar> intervals(count);
-    if (buffer.readScalarArray(intervals.get(), count)) {
-        return SkDashPathEffect::Make(intervals.get(), SkToInt(count), phase);
+    if (buffer.readScalarArray(intervals)) {
+        return SkDashPathEffect::Make(intervals, phase);
     }
     return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-sk_sp<SkPathEffect> SkDashPathEffect::Make(const SkScalar intervals[], int count, SkScalar phase) {
-    if (!SkDashPath::ValidDashPath(phase, intervals, count)) {
+sk_sp<SkPathEffect> SkDashPathEffect::Make(SkSpan<const SkScalar> intervals, SkScalar phase) {
+    if (!SkDashPath::ValidDashPath(phase, intervals.data(), intervals.size())) {
         return nullptr;
     }
-    return sk_sp<SkPathEffect>(new SkDashImpl(intervals, count, phase));
+    return sk_sp<SkPathEffect>(new SkDashImpl(intervals.data(), intervals.size(), phase));
 }

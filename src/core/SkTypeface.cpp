@@ -42,7 +42,7 @@
 #include "src/ports/SkTypeface_win_dw.h"
 #endif
 
-// TODO(https://crbug.com/skia/14338): This needs to be set by Bazel rules.
+// TODO(skbug.com/40045343): This needs to be set by Bazel rules.
 #ifdef SK_TYPEFACE_FACTORY_FONTATIONS
 #include "src/ports/SkTypeface_fontations_priv.h"
 #endif
@@ -411,16 +411,16 @@ private:
 };
 }
 
-int SkTypeface::textToGlyphs(const void* text, size_t byteLength, SkTextEncoding encoding,
-                             SkSpan<SkGlyphID> glyphs) const {
+size_t SkTypeface::textToGlyphs(const void* text, size_t byteLength, SkTextEncoding encoding,
+                                SkSpan<SkGlyphID> glyphs) const {
     if (0 == byteLength) {
         return 0;
     }
 
     SkASSERT(text);
 
-    int count = SkFontPriv::CountTextElements(text, byteLength, encoding);
-    if ((size_t)count > glyphs.size()) {
+    size_t count = SkFontPriv::CountTextElements(text, byteLength, encoding);
+    if (count > glyphs.size()) {
         return count;
     }
 

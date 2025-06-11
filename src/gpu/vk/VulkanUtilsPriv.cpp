@@ -101,14 +101,18 @@ void SetupSamplerYcbcrConversionInfo(VkSamplerYcbcrConversionCreateInfo* outInfo
 #endif
 
     VkFilter chromaFilter = conversionInfo.fChromaFilter;
-    if (!(conversionInfo.fFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-        chromaFilter = VK_FILTER_NEAREST;
-    }
-
     if (!(conversionInfo.fFormatFeatures &
           VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT)) {
-        // Because we don't have separate reconstruction filter, the min, mag and
-        // chroma filter must all match.  Let the caller know this restriction exists.
+        if (!(conversionInfo.fFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+            // Because we don't have have separate reconstruction filter, the min, mag and
+            // chroma filter must all match. However, we also don't support linear sampling so
+            // the min/mag filter have to be nearest. Therefore, we force the chroma filter to
+            // be nearest regardless of support for the feature
+            // VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT.
+            chromaFilter = VK_FILTER_NEAREST;
+        }
+
+        // Let the caller know that it must match min and mag filters with the chroma filter.
         *requiredSamplerFilter = chromaFilter;
     }
 
@@ -444,22 +448,18 @@ sk_sp<skgpu::VulkanInterface> MakeInterface(const skgpu::VulkanBackendContext& c
             reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
                     context.fGetProc("vkEnumerateInstanceVersion", VK_NULL_HANDLE, VK_NULL_HANDLE));
     uint32_t instanceVersion = 0;
-    if (!localEnumerateInstanceVersion) {
-        instanceVersion = VK_MAKE_VERSION(1, 0, 0);
-    } else {
-        VkResult err = localEnumerateInstanceVersion(&instanceVersion);
-        if (err) {
-            return nullptr;
-        }
+    // Vulkan 1.1 is required, so vkEnumerateInstanceVersion should always be available.
+    SkASSERT(localEnumerateInstanceVersion != nullptr);
+    VkResult err = localEnumerateInstanceVersion(&instanceVersion);
+    if (err) {
+        return nullptr;
     }
 
     PFN_vkGetPhysicalDeviceProperties localGetPhysicalDeviceProperties =
             reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(context.fGetProc(
                     "vkGetPhysicalDeviceProperties", context.fInstance, VK_NULL_HANDLE));
+    SkASSERT(localGetPhysicalDeviceProperties != nullptr);
 
-    if (!localGetPhysicalDeviceProperties) {
-        return nullptr;
-    }
     VkPhysicalDeviceProperties physDeviceProperties;
     localGetPhysicalDeviceProperties(context.fPhysicalDevice, &physDeviceProperties);
     uint32_t physDevVersion = physDeviceProperties.apiVersion;
@@ -468,6 +468,13 @@ sk_sp<skgpu::VulkanInterface> MakeInterface(const skgpu::VulkanBackendContext& c
 
     instanceVersion = std::min(instanceVersion, apiVersion);
     physDevVersion = std::min(physDevVersion, apiVersion);
+
+    if (instanceVersion < VK_API_VERSION_1_1 || physDevVersion < VK_API_VERSION_1_1) {
+        SkDebugf("Vulkan 1.1 is required but not available. "
+                 "Instance version: %#08X, Device version: %#08X",
+                 instanceVersion, physDevVersion);
+        return nullptr;
+    }
 
     sk_sp<skgpu::VulkanInterface> interface(new skgpu::VulkanInterface(context.fGetProc,
                                                                        context.fInstance,
