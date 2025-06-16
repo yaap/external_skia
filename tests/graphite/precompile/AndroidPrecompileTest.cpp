@@ -35,6 +35,7 @@ const PrecompileSettings kPrecompileCases[] = {
 /*  0 */ { ImagePremulHWOnlySrcover(),         DrawTypeFlags::kNonAAFillRect,   kRGBA16F_1_D },
 // 100% (2/2) handles: 22 42
 /*  1 */ { ImagePremulHWOnlySrcover(),         kRRectAndNonAARect,              kRGBA_1_D },
+
 // 50% (2/4) handles: 63 72 - due to the w/o msaa load variants not being used
 /*  2 */ { ImagePremulHWOnlySrcover(),         kRRectAndNonAARect,              kRGBA_4_DS },
 
@@ -51,7 +52,7 @@ const PrecompileSettings kPrecompileCases[] = {
 // 100% (2/2) handles 10 29
 /*  7 */ { TransparentPaintImageSRGBHWOnlySrcover(), kRRectAndNonAARect,        kRGBA_1_D_SRGB },
 
-// 75% (2/2) handles 27 56 57
+// 75% (3/4) handles 27 56 57
 /*  8 */ { SolidSrcSrcover(),                  kRRectAndNonAARect,              kRGBA_1_D },
 
 // 50% (2/4) handles 74 86
@@ -73,6 +74,7 @@ const PrecompileSettings kPrecompileCases[] = {
 
 // 100% (2/2) handles 16 32
 /* 14 */ { ImagePremulHWOnlyMatrixCFDitherSrcover(), kRRectAndNonAARect,        kRGBA_1_D },
+
 // 50% (1/2) handles 69 - due to the w/o msaa load variants not being used
 /* 15 */ { ImagePremulHWOnlyMatrixCFDitherSrcover(), DrawTypeFlags::kNonAAFillRect, kRGBA_4_DS },
 
@@ -82,11 +84,13 @@ const PrecompileSettings kPrecompileCases[] = {
 
 // 100% (2/2) handles 17 34
 /* 17 */ { ImageSRGBHWOnlyMatrixCFDitherSrcover(), kRRectAndNonAARect,          kRGBA_1_D_SRGB },
+
 // 50% (1/2) handles 77 - due to the w/o msaa load variants not being used
 /* 18 */ { ImageSRGBHWOnlyMatrixCFDitherSrcover(), DrawTypeFlags::kAnalyticRRect, kRGBA_4_DS_SRGB },
 
 // 100% (1/1) handles 36
 /* 19 */ { ImageAlphaPremulHWOnlyMatrixCFSrcover(), DrawTypeFlags::kNonAAFillRect, kRGBA_1_D },
+
 // 50% (1/2) handles 70 - due to the w/o msaa load variants not being used
 /* 20 */ { ImageAlphaPremulHWOnlyMatrixCFSrcover(), DrawTypeFlags::kNonAAFillRect, kRGBA_4_DS },
 
@@ -196,37 +200,93 @@ const PrecompileSettings kPrecompileCases[] = {
            DrawTypeFlags::kAnalyticRRect,
            kRGBA_1_D_SRGB },
 
-// 59% (13/22) handles 75 76 80 81 83 84 (94 95 96 97 98 99 100)
+// 59% (13/22) handles 75 76 80 81 83 84 (96 97 98 99 100 101 102)
 /* 42 */ { SolidSrcover(), DrawTypeFlags::kNonSimpleShape, kRGBA_4_DS },
+
+// AnalyticClip block - all the PrecompileOptions here are just clones of earlier ones
+// with an additional kAnalyticClip flag
+
+// 100% (2/2) handles: 23 43
+/* 43 */ { ImagePremulHWOnlySrcover(),
+           kRRectAndNonAARect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D },
+
+// 50% (1/2) handles: 91
+/* 44 */ { ImagePremulHWOnlySrcover(),
+           DrawTypeFlags::kNonAAFillRect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_4_DS },
+
+// 50% (1/2) handles: 45
+/* 45 */ { ImageHWOnlySRGBSrcover(),
+           kRRectAndNonAARect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D_SRGB },
+
+// 100% (1/1) handles 95
+/* 46 */ { TransparentPaintImagePremulHWOnlySrcover(),
+           DrawTypeFlags::kNonAAFillRect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D },
+
+// 50% (2/4) handles 58 94
+/* 47 */ { SolidSrcSrcover(),
+           kRRectAndNonAARect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D },
+
+// 50% (2/4) handles 89 92
+/* 48 */ { SolidSrcSrcover(),
+           DrawTypeFlags::kNonAAFillRect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_4_DS },
+
+// 50% (1/2) handles 33
+/* 49 */ { ImagePremulHWOnlyMatrixCFDitherSrcover(),
+           kRRectAndNonAARect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D },
+
+// 50% (1/2) handles 35
+/* 50 */ { ImageSRGBHWOnlyMatrixCFDitherSrcover(),
+           kRRectAndNonAARect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D_SRGB },
 
 #if defined(SK_VULKAN) && defined(SK_BUILD_FOR_ANDROID)
 // 238 block ----------------
 
 // 100% (2/2) handles 25 47
-/* 43 */ { ImagePremulYCbCr238Srcover(),       kRRectAndNonAARect,              kRGBA_1_D },
+/* 51 */ { ImagePremulYCbCr238Srcover(),       kRRectAndNonAARect,              kRGBA_1_D },
+
+// 50% (1/2) handles 48
+/* 52 */ { ImagePremulYCbCr238Srcover(),
+           kRRectAndNonAARect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D },
+
 // 50% (1/2) handles 93
-/* 44 */ { TransparentPaintImagePremulYCbCr238Srcover(), kRRectAndNonAARect,    kRGBA_1_D },
+/* 53 */ { TransparentPaintImagePremulYCbCr238Srcover(), kRRectAndNonAARect,    kRGBA_1_D },
 // 100% (2/2) handles 87 88
-/* 45 */ { ImagePremulYCbCr238Srcover(),       kRRectAndNonAARect,              kRGBA_4_DS },
+/* 54 */ { ImagePremulYCbCr238Srcover(),       kRRectAndNonAARect,              kRGBA_4_DS },
+
+// 100% (1/1) handles 90
+/* 55 */ { ImagePremulYCbCr238Srcover(),
+           DrawTypeFlags::kNonAAFillRect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_4_DS },
 
 // 240 block ----------------
 
 // 100% (1/1) handles 46
-/* 46 */ { ImagePremulYCbCr240Srcover(),       DrawTypeFlags::kNonAAFillRect,   kRGBA_1_D },
+/* 56 */ { ImagePremulYCbCr240Srcover(),       DrawTypeFlags::kNonAAFillRect,   kRGBA_1_D },
 // 50% (1/2) handles 73
-/* 47 */ { ImagePremulYCbCr240Srcover(),       DrawTypeFlags::kNonAAFillRect,   kRGBA_4_DS },
+/* 57 */ { ImagePremulYCbCr240Srcover(),       DrawTypeFlags::kNonAAFillRect,   kRGBA_4_DS },
 // 50% (1/2) handles 67
-/* 48 */ { TransparentPaintImagePremulYCbCr240Srcover(), DrawTypeFlags::kNonAAFillRect,kRGBA_4_DS },
+/* 58 */ { TransparentPaintImagePremulYCbCr240Srcover(), DrawTypeFlags::kNonAAFillRect,kRGBA_4_DS },
 
 // 247 block ----------------
 
 // 100% (1/1) handles 8
-/* 49 */ { MouriMapCrosstalkAndChunk16x16YCbCr247(),DrawTypeFlags::kNonAAFillRect,kRGBA16F_1_D_SRGB },
+/* 59 */ { MouriMapCrosstalkAndChunk16x16YCbCr247(),
+           DrawTypeFlags::kNonAAFillRect,
+           kRGBA16F_1_D_SRGB },
 
 // The next 2 have the same PaintOptions but different destination surfaces
 
 // 100% (2/2) handles 21 39
-/* 50 */ { LinearEffect("BT2020_ITU_PQ__BT2020__false__UNKNOWN",
+/* 60 */ { LinearEffect("BT2020_ITU_PQ__BT2020__false__UNKNOWN",
                         ChildType::kHWTextureYCbCr247,
                         SkBlendMode::kSrcOver,
                         /* paintColorIsOpaque= */ true,
@@ -236,7 +296,7 @@ const PrecompileSettings kPrecompileCases[] = {
            kRGBA_1_D_SRGB },
 
 // 100% (1/1) handles 79
-/* 51 */ { LinearEffect("BT2020_ITU_PQ__BT2020__false__UNKNOWN",
+/* 61 */ { LinearEffect("BT2020_ITU_PQ__BT2020__false__UNKNOWN",
                         ChildType::kHWTextureYCbCr247,
                         SkBlendMode::kSrcOver,
                         /* paintColorIsOpaque= */ true,
@@ -244,6 +304,16 @@ const PrecompileSettings kPrecompileCases[] = {
                         /* dither= */ true),
            DrawTypeFlags::kNonAAFillRect,
            kRGBA_4_DS_SRGB },
+
+// 100% (1/1) handles 40
+/* 62 */ { LinearEffect("BT2020_ITU_PQ__BT2020__false__UNKNOWN",
+                        ChildType::kHWTextureYCbCr247,
+                        SkBlendMode::kSrcOver,
+                        /* paintColorIsOpaque= */ true,
+                        /* matrixColorFilter= */ false,
+                        /* dither= */ true),
+           DrawTypeFlags::kNonAAFillRect | DrawTypeFlags::kAnalyticClip,
+           kRGBA_1_D_SRGB },
 #endif
 };
 
@@ -325,7 +395,7 @@ static const PipelineLabel kCases[] = {
 /*  22 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "AnalyticRRectRenderStep + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  23 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "AnalyticRRectRenderStep + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] SrcOver AnalyticClip" },
 /*  24 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
@@ -355,13 +425,13 @@ static const PipelineLabel kCases[] = {
 /*  32 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "Compose [ Compose [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] MatrixColorFilter ] Dither ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  33 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "Compose [ Compose [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] MatrixColorFilter ] Dither ] SrcOver AnalyticClip" },
 /*  34 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "Compose [ Compose [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformSRGB ] ] MatrixColorFilter ] Dither ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  35 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "Compose [ Compose [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformSRGB ] ] MatrixColorFilter ] Dither ] SrcOver AnalyticClip" },
 /*  36 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
@@ -376,7 +446,7 @@ static const PipelineLabel kCases[] = {
 /*  39 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "Compose [ RE_LinearEffect_BT2020_ITU_PQ__BT2020__false__UNKNOWN__Shader [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kEwAAPcAAAAAAAAA) ] ColorSpaceTransform ] ] ColorSpaceTransform ColorSpaceTransform ] Dither ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  40 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "Compose [ RE_LinearEffect_BT2020_ITU_PQ__BT2020__false__UNKNOWN__Shader [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kEwAAPcAAAAAAAAA) ] ColorSpaceTransform ] ] ColorSpaceTransform ColorSpaceTransform ] Dither ] SrcOver AnalyticClip" },
 /*  41 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
@@ -385,13 +455,13 @@ static const PipelineLabel kCases[] = {
 /*  42 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  43 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] SrcOver AnalyticClip" },
 /*  44 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformSRGB ] ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  45 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformSRGB ] ] SrcOver AnalyticClip" },
 /*  46 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
@@ -400,7 +470,7 @@ static const PipelineLabel kCases[] = {
 /*  47 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kHoAAO4AAAAAAAAA) ] ColorSpaceTransformPremul ] ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  48 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kHoAAO4AAAAAAAAA) ] ColorSpaceTransformPremul ] ] SrcOver AnalyticClip" },
 /*  49 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
@@ -430,7 +500,7 @@ static const PipelineLabel kCases[] = {
 /*  57 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "SolidColor SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+/*  58 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "SolidColor SrcOver AnalyticClip" },
 /*  59 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
@@ -525,50 +595,55 @@ static const PipelineLabel kCases[] = {
 /*  88 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
                 "AnalyticRRectRenderStep + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kHoAAO4AAAAAAAAA) ] ColorSpaceTransformPremul ] ] SrcOver" },
-/*   X */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
+/*  89 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "SolidColor SrcOver AnalyticClip" },
-/*   X */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
+/*  90 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kHoAAO4AAAAAAAAA) ] ColorSpaceTransformPremul ] ] SrcOver AnalyticClip" },
-/*   X */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
+/*  91 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] SrcOver AnalyticClip" },
-/*   X */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
+/*  92 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
                 "CoverBoundsRenderStep[NonAAFill] + "
                 "SolidColor Src AnalyticClip" },
 /*  93 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
                 "AnalyticRRectRenderStep + "
                 "BlendCompose [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(3: kHoAAO4AAAAAAAAA) ] ColorSpaceTransformPremul ] ] AlphaOnlyPaintColor SrcIn ] SrcOver" },
 
+/*  94 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+                "CoverBoundsRenderStep[NonAAFill] + "
+                "SolidColor Src AnalyticClip" },
+
+/*  95 */ { -1, "RP((RGBA8+D16 x1).rgba) + "
+                "CoverBoundsRenderStep[NonAAFill] + "
+                "BlendCompose [ LocalMatrix [ Compose [ CoordNormalize [ HardwareImage(0) ] ColorSpaceTransformPremul ] ] AlphaOnlyPaintColor SrcIn ] SrcOver AnalyticClip" },
+
                 // Synthetic placeholders for non-convex draw helpers
-/*  94 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
-                "MiddleOutFanRenderStep[Winding] + "
-                "(empty)" },
-/*  95 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba w/ msaa load) + "
-                "MiddleOutFanRenderStep[Winding] + "
-                "(empty)" },
 /*  96 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
-                "TessellateCurvesRenderStep[Winding] + "
+                "MiddleOutFanRenderStep[Winding] + "
                 "(empty)" },
 /*  97 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba w/ msaa load) + "
-                "TessellateCurvesRenderStep[Winding] + "
+                "MiddleOutFanRenderStep[Winding] + "
                 "(empty)" },
 /*  98 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
-                "TessellateWedgesRenderStep[Winding] + "
+                "TessellateCurvesRenderStep[Winding] + "
                 "(empty)" },
 /*  99 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba w/ msaa load) + "
+                "TessellateCurvesRenderStep[Winding] + "
+                "(empty)" },
+/* 100 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba) + "
                 "TessellateWedgesRenderStep[Winding] + "
                 "(empty)" },
-/* 100 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba w/ msaa load) + "
+/* 101 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba w/ msaa load) + "
+                "TessellateWedgesRenderStep[Winding] + "
+                "(empty)" },
+/* 102 */ { -1, "RP((RGBA8+D24_S8 x4->1).rgba w/ msaa load) + "
                 "TessellateWedgesRenderStep[EvenOdd] + "
                 "(empty)" },
 };
 
 bool skip(const char* str) {
-    if (strstr(str, "AnalyticClip")) {  // we have to think about this a bit more
-        return true;
-    }
     if (strstr(str, "AnalyticBlurRenderStep")) { // currently internal only
         return true;
     }
@@ -634,7 +709,7 @@ DEF_GRAPHITE_TEST_FOR_CONTEXTS(AndroidPrecompileTest, is_acceptable_context_type
         return;
     }
 #endif
-    std::set<int> MSAALoadOnlyCases = { 2, 6, 9, 13, 15, 20, 24, 36, 38, 47, 48 };
+    std::set<int> MSAALoadOnlyCases = { 2, 6, 9, 13, 15, 20, 24, 36, 38, 57, 58 };
 
     PipelineLabelInfoCollector collector({ kCases }, skip);
 
