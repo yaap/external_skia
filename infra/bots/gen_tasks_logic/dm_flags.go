@@ -330,6 +330,8 @@ func (b *taskBuilder) dmFlags(internalHardwareLabel string) {
 			skip(ALL, "test", ALL, "SkImage_makeNonTextureImage")
 			skip(ALL, "test", ALL, "SkipCopyTaskTest")
 			skip(ALL, "test", ALL, "SkipOpsTaskTest")
+			skip(ALL, "test", ALL, "SkColorSpaceXform_Ganesh")
+			skip(ALL, "test", ALL, "SkColorSpaceXform_Graphite")
 			skip(ALL, "test", ALL, "SkRuntimeBlender_GPU")
 			skip(ALL, "test", ALL, "SkRuntimeEffect") // knocks out a bunch
 			skip(ALL, "test", ALL, "SkRuntimeShaderImageFilter_GPU")
@@ -989,7 +991,7 @@ func (b *taskBuilder) dmFlags(internalHardwareLabel string) {
 		skip("pdf", "skp", ALL, "desk_baidu.skp")
 		skip("pdf", "skp", ALL, "desk_wikipedia.skp")
 		skip(ALL, "svg", ALL, ALL)
-		// skbug.com/40040468 and 8847
+		// skbug.com/40040468 and skbug.com/40040128
 		skip(ALL, "test", ALL, "InitialTextureClear")
 	}
 
@@ -1315,7 +1317,7 @@ func (b *taskBuilder) dmFlags(internalHardwareLabel string) {
 
 	if b.matchOs("Mac") && (b.gpu("IntelIrisPlus") || b.gpu("IntelHD6000")) &&
 		b.extraConfig("Metal") {
-		// TODO(skia:296960708): The IntelIrisPlus+Metal config hangs on this test, but passes
+		// TODO(b/296960708): The IntelIrisPlus+Metal config hangs on this test, but passes
 		// SurfaceContextWritePixelsMipped so let that one keep running.
 		skip(ALL, "tests", ALL, "SurfaceContextWritePixels")
 		skip(ALL, "tests", ALL, "SurfaceContextWritePixelsMipped")
