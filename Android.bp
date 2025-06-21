@@ -322,6 +322,7 @@ cc_library_static {
         "src/core/SkPathBuilder.cpp",
         "src/core/SkPathEffect.cpp",
         "src/core/SkPathMeasure.cpp",
+        "src/core/SkPathRaw.cpp",
         "src/core/SkPathRef.cpp",
         "src/core/SkPathUtils.cpp",
         "src/core/SkPath_serial.cpp",
@@ -864,6 +865,7 @@ cc_library_static {
         "src/gpu/vk/VulkanInterface.cpp",
         "src/gpu/vk/VulkanMemory.cpp",
         "src/gpu/vk/VulkanMutableTextureState.cpp",
+        "src/gpu/vk/VulkanPreferredFeatures.cpp",
         "src/gpu/vk/VulkanUtilsPriv.cpp",
         "src/gpu/vk/vulkanmemoryallocator/VulkanAMDMemoryAllocator.cpp",
         "src/image/SkImage.cpp",
@@ -1162,6 +1164,7 @@ gensrcs {
 cc_library_static {
     name: "libskia_skcms",
     host_supported: true,
+    sdk_version: "current",
     srcs: [
         "modules/skcms/skcms.cc",
         "modules/skcms/src/skcms_TransformBaseline.cc",
@@ -1368,6 +1371,7 @@ cc_library_static {
         "src/core/SkPathBuilder.cpp",
         "src/core/SkPathEffect.cpp",
         "src/core/SkPathMeasure.cpp",
+        "src/core/SkPathRaw.cpp",
         "src/core/SkPathRef.cpp",
         "src/core/SkPathUtils.cpp",
         "src/core/SkPath_serial.cpp",
@@ -2061,6 +2065,7 @@ cc_library_static {
           "src/gpu/vk/VulkanInterface.cpp",
           "src/gpu/vk/VulkanMemory.cpp",
           "src/gpu/vk/VulkanMutableTextureState.cpp",
+          "src/gpu/vk/VulkanPreferredFeatures.cpp",
           "src/gpu/vk/VulkanUtilsPriv.cpp",
           "src/gpu/vk/vulkanmemoryallocator/VulkanAMDMemoryAllocator.cpp",
           "src/image/SkImage_AndroidFactories.cpp",
@@ -2183,7 +2188,6 @@ cc_defaults {
     name: "skia_deps",
     defaults: ["skia_renderengine_deps"],
     shared_libs: [
-        "libdng_sdk",
         "libjpeg",
         "libpiex",
         "libexpat",
@@ -2206,14 +2210,23 @@ cc_defaults {
       android: {
         shared_libs: [
             "libmediandk", // Needed to link libcrabbyavif_ffi in some configurations.
+            "libdng_sdk",
         ],
         whole_static_libs: [
             "libcrabbyavif_ffi",
         ],
       },
+      host_linux: {
+        static_libs: [
+          "libdng_sdk",
+        ],
+      },
       darwin: {
         host_ldlibs: [
             "-framework AppKit",
+        ],
+        static_libs: [
+          "libdng_sdk",
         ],
       },
       windows: {
@@ -3243,6 +3256,7 @@ cc_defaults {
         "tests/PathOpsTigerTest.cpp",
         "tests/PathOpsTightBoundsTest.cpp",
         "tests/PathOpsTypesTest.cpp",
+        "tests/PathRawTest.cpp",
         "tests/PathRendererCacheTests.cpp",
         "tests/PathTest.cpp",
         "tests/PictureBBHTest.cpp",
@@ -3392,6 +3406,7 @@ cc_defaults {
         "tests/VkBackendSurfaceTest.cpp",
         "tests/VkDrawableTest.cpp",
         "tests/VkHardwareBufferTest.cpp",
+        "tests/VkPreferredFeaturesTest.cpp",
         "tests/VkPriorityExtensionTest.cpp",
         "tests/VkProtectedContextTest.cpp",
         "tests/VkWrapTests.cpp",
@@ -4140,6 +4155,7 @@ cc_defaults {
         "src/core/SkPathBuilder.cpp",
         "src/core/SkPathEffect.cpp",
         "src/core/SkPathMeasure.cpp",
+        "src/core/SkPathRaw.cpp",
         "src/core/SkPathRef.cpp",
         "src/core/SkPathUtils.cpp",
         "src/core/SkPath_serial.cpp",
@@ -4686,6 +4702,7 @@ cc_defaults {
         "src/gpu/vk/VulkanInterface.cpp",
         "src/gpu/vk/VulkanMemory.cpp",
         "src/gpu/vk/VulkanMutableTextureState.cpp",
+        "src/gpu/vk/VulkanPreferredFeatures.cpp",
         "src/gpu/vk/VulkanUtilsPriv.cpp",
         "src/gpu/vk/vulkanmemoryallocator/VulkanAMDMemoryAllocator.cpp",
         "src/image/SkImage.cpp",
@@ -5184,6 +5201,7 @@ cc_defaults {
         "tests/PathOpsTigerTest.cpp",
         "tests/PathOpsTightBoundsTest.cpp",
         "tests/PathOpsTypesTest.cpp",
+        "tests/PathRawTest.cpp",
         "tests/PathRendererCacheTests.cpp",
         "tests/PathTest.cpp",
         "tests/PictureBBHTest.cpp",
@@ -5332,6 +5350,7 @@ cc_defaults {
         "tests/VkBackendSurfaceTest.cpp",
         "tests/VkDrawableTest.cpp",
         "tests/VkHardwareBufferTest.cpp",
+        "tests/VkPreferredFeaturesTest.cpp",
         "tests/VkPriorityExtensionTest.cpp",
         "tests/VkProtectedContextTest.cpp",
         "tests/VkWrapTests.cpp",
