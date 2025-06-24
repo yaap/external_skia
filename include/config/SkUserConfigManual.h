@@ -38,8 +38,6 @@
   // new behavior.
   #define SK_SUPPORT_LEGACY_ALPHA_BITMAP_AS_COVERAGE
 
-  #define SK_DNG_VERSION 0x01070100
-
 #if defined(__APPLE__) && !defined(SK_R32_SHIFT)
   // Set macOS to use BGRA format to match Linux and Windows
   #define SK_R32_SHIFT 16
