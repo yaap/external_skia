@@ -99,7 +99,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Utility-Libraries": {
 		Id:      "chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Utility-Libraries",
-		Version: "ec329e2721921f79743b90307ee047d08e057788",
+		Version: "cb20eb451cf2e272daaf40099e864a916d8b5542",
 		Path:    "third_party/externals/vulkan-utility-libraries",
 	},
 	"chromium.googlesource.com/external/github.com/google/highway": {
@@ -144,7 +144,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/vulkan-deps": {
 		Id:      "chromium.googlesource.com/vulkan-deps",
-		Version: "242b87cc5bcc7afb6846ac54ed278ee3c4bc2261",
+		Version: "e573f4bc7407fa49e2ffccfff3c0390d1c1a28d2",
 		Path:    "third_party/externals/vulkan-deps",
 	},
 	"chromium.googlesource.com/webm/libwebp": {
@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "0275c582a0809f0e645d8943dcd5e1c13766cbb0",
+		Version: "d7b31b22748daa067438d2af32f847057b85b3de",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
