@@ -4,13 +4,25 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
-
 #include "src/gpu/graphite/ClipStack.h"
 
-#include "include/core/SkMatrix.h"
+#include "include/core/SkBlendMode.h"
+#include "include/core/SkClipOp.h"
+#include "include/core/SkM44.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkPath.h"
+#include "include/core/SkPoint.h"
+#include "include/core/SkRRect.h"
+#include "include/core/SkRect.h"
+#include "include/core/SkScalar.h"
 #include "include/core/SkShader.h"
+#include "include/core/SkSpan.h"
 #include "include/core/SkStrokeRec.h"
 #include "include/gpu/graphite/Recorder.h"
+#include "include/private/base/SkDebug.h"
+#include "include/private/base/SkFloatingPoint.h"
+#include "src/base/SkEnumBitMask.h"
+#include "src/base/SkVx.h"
 #include "src/core/SkPathPriv.h"
 #include "src/core/SkRRectPriv.h"
 #include "src/core/SkRectPriv.h"
@@ -19,8 +31,15 @@
 #include "src/gpu/graphite/Device.h"
 #include "src/gpu/graphite/DrawParams.h"
 #include "src/gpu/graphite/RecorderPriv.h"
+#include "src/gpu/graphite/TextureProxy.h"
 #include "src/gpu/graphite/geom/BoundsManager.h"
+#include "src/gpu/graphite/geom/EdgeAAQuad.h"
 #include "src/gpu/graphite/geom/Geometry.h"
+#include "src/gpu/graphite/geom/NonMSAAClip.h"
+
+#include <algorithm>
+#include <atomic>
+#include <utility>
 
 namespace skgpu::graphite {
 
@@ -118,10 +137,10 @@ bool intersect_shape(const Transform& otherToDevice, const Shape& otherShape,
     // are incompatible with this function.
     bool shapeIntersectable = shape->isRect() ||
                               shape->isRRect() ||
-                              (shape->isEmpty() && shape->inverted());
+                              shape->isFloodFill();
     bool otherIntersectable = otherShape.isRect() || otherShape.isRRect();
     // Only clip shapes are used for `otherShape`, so we shouldn't see any flood fills here
-    SkASSERT(!(otherShape.isEmpty() && otherShape.inverted()));
+    SkASSERT(!otherShape.isFloodFill());
 
     if (!shapeIntersectable || !otherIntersectable) {
         // Technically if shapeIntersectable was true for empty+inverse, we could turn the flood
@@ -183,7 +202,7 @@ bool intersect_shape(const Transform& otherToDevice, const Shape& otherShape,
             SkASSERT(!localOtherRect.isEmptyNegativeOrNaN());
             shape->setRect(localOtherRect);
             return true;
-        } else if (shape->isEmpty() && shape->inverted()) {
+        } else if (shape->isFloodFill()) {
             shape->setRect(localOtherRect);
             return true;
         } else {
@@ -201,7 +220,7 @@ bool intersect_shape(const Transform& otherToDevice, const Shape& otherShape,
             localOtherRRect = otherShape.rrect();
         }
 
-        if (shape->isEmpty() && shape->inverted()) {
+        if (shape->isFloodFill()) {
             shape->setRRect(localOtherRRect);
             return true;
         } // Else continue with rrect+rrect intersection
