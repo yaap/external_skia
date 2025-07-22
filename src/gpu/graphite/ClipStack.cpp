@@ -207,24 +207,33 @@ bool intersect_shape(const Transform& otherToDevice, const Shape& otherShape,
         }
     }
 
+    // Since `otherShape` is either a rect or a round rect, bounds() is tight to the linear edges.
+    Rect localOtherRect = otherShape.bounds();
+    if (localToOther) {
+        localOtherRect = localToOther->inverseMapRect(localOtherRect);
+        SkASSERT(!localOtherRect.isEmptyNegativeOrNaN());
+    }
+    // Remember the edges that get clipped by the intersection
+    SkEnumBitMask<EdgeAAQuad::Flags> clippedEdges = clipped_edges(shape->bounds(), localOtherRect);
+    if (!shape->isFloodFill()) {
+        // And now it's tight to the intersection with `shape`, sans any corner rounding
+        localOtherRect.intersect(shape->bounds());
+    }
+    // Make sure that the intersected shape does not become subpixel in size, since drawing a
+    // subpixel/hairline shape produces a different result than something that's clipped.
+    float localAARadius = localToDevice.localAARadius(localOtherRect);
+    if (!std::isfinite(localAARadius) || any(localOtherRect.size() <= localAARadius)) {
+        return false;
+    }
+
     SkRRect localOtherRRect;
     if (otherShape.isRect()) {
-        Rect localOtherRect = otherShape.rect();
-        if (localToOther) {
-            localOtherRect = localToOther->inverseMapRect(localOtherRect);
-        }
-
-        if (shape->isRect()) {
+        if (shape->isRect() || shape->isFloodFill()) {
+            SkASSERT(*edgeFlags == EdgeAAQuad::Flags::kAll || !shape->isFloodFill());
             // Assuming that non-AA edges seam with non-AA edges other quads to create a uniform
             // coverage field, we turn on the AA edge flag when coincident or clipped. This will
             // create a nice AA edge from this draw while the other non-AA quad is discarded.
-            *edgeFlags |= clipped_edges(shape->rect(), localOtherRect);
-            localOtherRect.intersect(shape->rect());
-            SkASSERT(!localOtherRect.isEmptyNegativeOrNaN());
-            shape->setRect(localOtherRect);
-            return true;
-        } else if (shape->isFloodFill()) {
-            SkASSERT(*edgeFlags == EdgeAAQuad::Flags::kAll);
+            *edgeFlags |= clippedEdges; // This is a no-op if shape was a flood fill
             shape->setRect(localOtherRect);
             return true;
         } else {
@@ -245,9 +254,7 @@ bool intersect_shape(const Transform& otherToDevice, const Shape& otherShape,
         if (shape->isRect() && *edgeFlags != EdgeAAQuad::Flags::kAll) {
             // When combining a mixed edge AA quad with a rounded rectangle, we require that all
             // non-AA edges be clipped out entirely.
-            SkEnumBitMask<EdgeAAQuad::Flags> clipped = clipped_edges(shape->rect(),
-                                                                     localOtherRRect.rect());
-            if ((clipped | *edgeFlags) != EdgeAAQuad::Flags::kAll) {
+            if ((clippedEdges | *edgeFlags) != EdgeAAQuad::Flags::kAll) {
                 // The intersection shows AA'ed round corners and non-AA'ed edges, which can't be
                 // represented by just Geometry or Shape.
                 return false;
@@ -417,6 +424,8 @@ ClipStack::SimplifyResult ClipStack::Simplify(const TransformedShape& a,
         kII = 0b11
     };
 
+    // NOTE: contains() checks are ordered such that if both a.contains(b) and b.contains(a) are
+    // true, kAOnly is the returned result.
     switch(static_cast<ClipCombo>(((int) a.fOp << 1) | (int) b.fOp)) {
         case ClipCombo::kII:
             // Intersect (A) + Intersect (B)
@@ -480,19 +489,20 @@ ClipStack::SimplifyResult ClipStack::Simplify(const TransformedShape& a,
 ClipStack::DrawInfluence ClipStack::SimplifyForDraw(const TransformedShape& clip,
                                                     const TransformedShape& draw) {
     // Given the asserts below, we can just recast the SimplifyResult returned from
-    // Simplify(A=clip, B=draw):
+    // Simplify(A=draw, B=clip). We use the draw as A to treat a draw clipped to itself as
+    // unclipped, since that's simpler than replacing it with the draw's geometry.
     //
     // If the result is kEmpty, the draw is clipped out.
     static_assert((int) SimplifyResult::kEmpty == (int) DrawInfluence::kClipsOutDraw);
+    // If the result is kAOnly, the clip's shape doesn't impact the draw's coverage at all.
+    static_assert((int) SimplifyResult::kAOnly == (int) DrawInfluence::kNone);
     // If the result is kAOnly, only the clip's shape provides coverage and the draw could be
     // replaced with something that just covers the clip bounds.
-    static_assert((int) SimplifyResult::kAOnly == (int) DrawInfluence::kReplacesDraw);
-    // If the result is kBOnly, the clip's shape doesn't impact the draw's coverage at all.
-    static_assert((int) SimplifyResult::kBOnly == (int) DrawInfluence::kNone);
+    static_assert((int) SimplifyResult::kBOnly == (int) DrawInfluence::kReplacesDraw);
     // If the result is kBoth, the clip and the draw combine in a complex manner
     static_assert((int) SimplifyResult::kBoth == (int) DrawInfluence::kComplexInteraction);
 
-    SimplifyResult result = Simplify(clip, draw);
+    SimplifyResult result = Simplify(draw, clip);
     return static_cast<DrawInfluence>(result);
 }
 
