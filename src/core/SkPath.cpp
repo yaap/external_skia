@@ -172,7 +172,7 @@ SkPath::SkPath(sk_sp<SkPathRef> pr, SkPathFillType ft, bool isVolatile, SkPathCo
 void SkPath::resetFields() {
     //fPathRef is assumed to have been emptied by the caller.
     fLastMoveToIndex = INITIAL_LASTMOVETOINDEX_VALUE;
-    fFillType = SkToU8(SkPathFillType::kDefault);
+    fFillType = SkToU8(SkPathFillType::kWinding);
     this->setConvexity(SkPathConvexity::kUnknown);
     this->setFirstDirection(SkPathFirstDirection::kUnknown);
 }
@@ -3965,21 +3965,20 @@ int SkPathPriv::GenIDChangeListenersCount(const SkPath& path) {
     return path.fPathRef->genIDChangeListenerCount();
 }
 
-bool SkPathPriv::IsAxisAligned(SkSpan<const SkPoint> pts) {
+bool SkPathPriv::IsAxisAligned(const SkPath& path) {
     // Conservative (quick) test to see if all segments are axis-aligned.
     // Multiple contours might give a false-negative, but for speed, we ignore that
     // and just look at the raw points.
 
-    for (size_t i = 1; i < pts.size(); ++i) {
+    const SkPoint* pts = path.fPathRef->points();
+    const int count = path.fPathRef->countPoints();
+
+    for (int i = 1; i < count; ++i) {
         if (pts[i-1].fX != pts[i].fX && pts[i-1].fY != pts[i].fY) {
             return false;
         }
     }
     return true;
-}
-
-bool SkPathPriv::IsAxisAligned(const SkPath& path) {
-    return IsAxisAligned(path.fPathRef->pointSpan());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
