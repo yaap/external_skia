@@ -25,6 +25,7 @@
 #include <tuple>
 
 class SkRRect;
+struct SkPathRaw;
 
 class SK_API SkPathBuilder {
 public:
@@ -676,7 +677,7 @@ public:
         @param dir    SkPath::Direction to orient the new contour
         @return       reference to SkPathBuilder
      */
-    SkPathBuilder& addRect(const SkRect& rect, SkPathDirection dir = SkPathDirection::kCW) {
+    SkPathBuilder& addRect(const SkRect& rect, SkPathDirection dir = SkPathDirection::kDefault) {
         return this->addRect(rect, dir, 0);
     }
 
@@ -714,7 +715,7 @@ public:
         @param dir    SkPath::Direction to wind SkRRect
         @return       reference to SkPathBuilder
     */
-    SkPathBuilder& addRRect(const SkRRect& rrect, SkPathDirection dir = SkPathDirection::kCW) {
+    SkPathBuilder& addRRect(const SkRRect& rrect, SkPathDirection dir = SkPathDirection::kDefault) {
         // legacy start indices: 6 (CW) and 7 (CCW)
         return this->addRRect(rrect, dir, dir == SkPathDirection::kCW ? 6 : 7);
     }
@@ -730,7 +731,7 @@ public:
 
         example: https://fiddle.skia.org/c/@Path_addOval_2
     */
-    SkPathBuilder& addOval(const SkRect& oval, SkPathDirection dir = SkPathDirection::kCW) {
+    SkPathBuilder& addOval(const SkRect& oval, SkPathDirection dir = SkPathDirection::kDefault) {
         // legacy start index: 1
         return this->addOval(oval, dir, 1);
     }
@@ -748,7 +749,7 @@ public:
         @return        reference to SkPathBuilder
     */
     SkPathBuilder& addCircle(SkScalar x, SkScalar y, SkScalar radius,
-                             SkPathDirection dir = SkPathDirection::kCW);
+                             SkPathDirection dir = SkPathDirection::kDefault);
 
     /** Adds contour created from line array, adding (pts.size() - 1) line segments.
         Contour added starts at pts[0], then adds a line for every additional SkPoint
@@ -908,9 +909,11 @@ public:
     SkSpan<const SkPoint> points() const {
         return fPts;
     }
-    SkSpan<const uint8_t> verbs() const {
+    SkSpan<const SkPathVerb> verbs() const {
         return fVerbs;
     }
+
+    SkPathBuilder& addRaw(const SkPathRaw&);
 
 private:
     SkPathRef::PointsArray fPts;
