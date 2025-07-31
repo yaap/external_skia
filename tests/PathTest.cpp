@@ -4395,59 +4395,59 @@ public:
         SkPathRef::Editor ed(&pathRef);
 
         {
-            ed.growForRepeatedVerb(SkPath::kMove_Verb, kRepeatCnt);
+            ed.growForRepeatedVerb(SkPathVerb::kMove, kRepeatCnt);
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countVerbs());
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countPoints());
             REPORTER_ASSERT(reporter, 0 == pathRef->getSegmentMasks());
             for (int i = 0; i < kRepeatCnt; ++i) {
-                REPORTER_ASSERT(reporter, SkPath::kMove_Verb == pathRef->atVerb(i));
+                REPORTER_ASSERT(reporter, SkPathVerb::kMove == pathRef->verbs()[i]);
             }
             ed.resetToSize(0, 0, 0);
         }
 
         {
-            ed.growForRepeatedVerb(SkPath::kLine_Verb, kRepeatCnt);
+            ed.growForRepeatedVerb(SkPathVerb::kLine, kRepeatCnt);
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countVerbs());
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countPoints());
             REPORTER_ASSERT(reporter, SkPath::kLine_SegmentMask == pathRef->getSegmentMasks());
             for (int i = 0; i < kRepeatCnt; ++i) {
-                REPORTER_ASSERT(reporter, SkPath::kLine_Verb == pathRef->atVerb(i));
+                REPORTER_ASSERT(reporter, SkPathVerb::kLine == pathRef->atVerb(i));
             }
             ed.resetToSize(0, 0, 0);
         }
 
         {
-            ed.growForRepeatedVerb(SkPath::kQuad_Verb, kRepeatCnt);
+            ed.growForRepeatedVerb(SkPathVerb::kQuad, kRepeatCnt);
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countVerbs());
             REPORTER_ASSERT(reporter, 2*kRepeatCnt == pathRef->countPoints());
             REPORTER_ASSERT(reporter, SkPath::kQuad_SegmentMask == pathRef->getSegmentMasks());
             for (int i = 0; i < kRepeatCnt; ++i) {
-                REPORTER_ASSERT(reporter, SkPath::kQuad_Verb == pathRef->atVerb(i));
+                REPORTER_ASSERT(reporter, SkPathVerb::kQuad == pathRef->atVerb(i));
             }
             ed.resetToSize(0, 0, 0);
         }
 
         {
             SkScalar* weights = nullptr;
-            ed.growForRepeatedVerb(SkPath::kConic_Verb, kRepeatCnt, &weights);
+            ed.growForRepeatedVerb(SkPathVerb::kConic, kRepeatCnt, &weights);
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countVerbs());
             REPORTER_ASSERT(reporter, 2*kRepeatCnt == pathRef->countPoints());
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countWeights());
             REPORTER_ASSERT(reporter, SkPath::kConic_SegmentMask == pathRef->getSegmentMasks());
             REPORTER_ASSERT(reporter, weights);
             for (int i = 0; i < kRepeatCnt; ++i) {
-                REPORTER_ASSERT(reporter, SkPath::kConic_Verb == pathRef->atVerb(i));
+                REPORTER_ASSERT(reporter, SkPathVerb::kConic == pathRef->atVerb(i));
             }
             ed.resetToSize(0, 0, 0);
         }
 
         {
-            ed.growForRepeatedVerb(SkPath::kCubic_Verb, kRepeatCnt);
+            ed.growForRepeatedVerb(SkPathVerb::kCubic, kRepeatCnt);
             REPORTER_ASSERT(reporter, kRepeatCnt == pathRef->countVerbs());
             REPORTER_ASSERT(reporter, 3*kRepeatCnt == pathRef->countPoints());
             REPORTER_ASSERT(reporter, SkPath::kCubic_SegmentMask == pathRef->getSegmentMasks());
             for (int i = 0; i < kRepeatCnt; ++i) {
-                REPORTER_ASSERT(reporter, SkPath::kCubic_Verb == pathRef->atVerb(i));
+                REPORTER_ASSERT(reporter, SkPathVerb::kCubic == pathRef->atVerb(i));
             }
             ed.resetToSize(0, 0, 0);
         }
@@ -5745,15 +5745,15 @@ DEF_TEST(path_last_move_to_index, r) {
 }
 
 static void test_edger(skiatest::Reporter* r,
-                       const std::initializer_list<SkPath::Verb>& in,
-                       const std::initializer_list<SkPath::Verb>& expected) {
+                       const std::initializer_list<SkPathVerb>& in,
+                       const std::initializer_list<SkPathVerb>& expected) {
     SkPath path;
     SkScalar x = 0, y = 0;
     for (auto v : in) {
         switch (v) {
-            case SkPath::kMove_Verb: path.moveTo(x++, y++); break;
-            case SkPath::kLine_Verb: path.lineTo(x++, y++); break;
-            case SkPath::kClose_Verb: path.close(); break;
+            case SkPathVerb::kMove: path.moveTo(x++, y++); break;
+            case SkPathVerb::kLine: path.lineTo(x++, y++); break;
+            case SkPathVerb::kClose: path.close(); break;
             default: SkASSERT(false);
         }
     }
@@ -5911,9 +5911,9 @@ static void test_addPath_and_injected_moveTo(skiatest::Reporter* reporter) {
 }
 
 DEF_TEST(pathedger, r) {
-    auto M = SkPath::kMove_Verb;
-    auto L = SkPath::kLine_Verb;
-    auto C = SkPath::kClose_Verb;
+    auto M = SkPathVerb::kMove;
+    auto L = SkPathVerb::kLine;
+    auto C = SkPathVerb::kClose;
 
     test_edger(r, { M }, {});
     test_edger(r, { M, M }, {});

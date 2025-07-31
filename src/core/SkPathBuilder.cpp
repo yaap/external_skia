@@ -164,7 +164,7 @@ SkPathBuilder& SkPathBuilder::moveTo(SkPoint pt) {
     fLastMoveIndex = SkToInt(fPts.size());
 
     fPts.push_back(pt);
-    fVerbs.push_back((uint8_t)SkPathVerb::kMove);
+    fVerbs.push_back(SkPathVerb::kMove);
 
     fLastMovePoint = pt;
     fNeedsMoveVerb = false;
@@ -181,7 +181,7 @@ SkPathBuilder& SkPathBuilder::lineTo(SkPoint pt) {
     this->ensureMove();
 
     fPts.push_back(pt);
-    fVerbs.push_back((uint8_t)SkPathVerb::kLine);
+    fVerbs.push_back(SkPathVerb::kLine);
 
     fSegmentMask |= kLine_SkPathSegmentMask;
     return *this;
@@ -193,7 +193,7 @@ SkPathBuilder& SkPathBuilder::quadTo(SkPoint pt1, SkPoint pt2) {
     SkPoint* p = fPts.push_back_n(2);
     p[0] = pt1;
     p[1] = pt2;
-    fVerbs.push_back((uint8_t)SkPathVerb::kQuad);
+    fVerbs.push_back(SkPathVerb::kQuad);
 
     fSegmentMask |= kQuad_SkPathSegmentMask;
     return *this;
@@ -205,7 +205,7 @@ SkPathBuilder& SkPathBuilder::conicTo(SkPoint pt1, SkPoint pt2, SkScalar w) {
     SkPoint* p = fPts.push_back_n(2);
     p[0] = pt1;
     p[1] = pt2;
-    fVerbs.push_back((uint8_t)SkPathVerb::kConic);
+    fVerbs.push_back(SkPathVerb::kConic);
     fConicWeights.push_back(w);
 
     fSegmentMask |= kConic_SkPathSegmentMask;
@@ -219,7 +219,7 @@ SkPathBuilder& SkPathBuilder::cubicTo(SkPoint pt1, SkPoint pt2, SkPoint pt3) {
     p[0] = pt1;
     p[1] = pt2;
     p[2] = pt3;
-    fVerbs.push_back((uint8_t)SkPathVerb::kCubic);
+    fVerbs.push_back(SkPathVerb::kCubic);
 
     fSegmentMask |= kCubic_SkPathSegmentMask;
     return *this;
@@ -227,10 +227,10 @@ SkPathBuilder& SkPathBuilder::cubicTo(SkPoint pt1, SkPoint pt2, SkPoint pt3) {
 
 SkPathBuilder& SkPathBuilder::close() {
     // If this is a 2nd 'close', we just ignore it
-    if (!fVerbs.empty() && fVerbs.back() != (uint8_t)SkPathVerb::kClose) {
+    if (!fVerbs.empty() && fVerbs.back() != SkPathVerb::kClose) {
         this->ensureMove();
 
-        fVerbs.push_back((uint8_t)SkPathVerb::kClose);
+        fVerbs.push_back(SkPathVerb::kClose);
 
         // fLastMovePoint stays where it is -- the previous moveTo
         fNeedsMoveVerb = true;
@@ -290,12 +290,11 @@ SkPath SkPathBuilder::make(sk_sp<SkPathRef> pr) const {
 
     // This hopefully can go away in the future when Paths are immutable,
     // but if while they are still editable, we need to correctly set this.
-    const uint8_t* start = path.fPathRef->verbsBegin();
-    const uint8_t* stop  = path.fPathRef->verbsEnd();
-    if (start < stop) {
+    SkSpan<const SkPathVerb> verbs = path.fPathRef->verbs();
+    if (!verbs.empty()) {
         SkASSERT(fLastMoveIndex >= 0);
         // peek at the last verb, to know if our last contour is closed
-        const bool isClosed = (stop[-1] == (uint8_t)SkPathVerb::kClose);
+        const bool isClosed = (verbs.back() == SkPathVerb::kClose);
         path.fLastMoveToIndex = isClosed ? ~fLastMoveIndex : fLastMoveIndex;
     }
 
@@ -864,34 +863,31 @@ SkPathBuilder& SkPathBuilder::privateReversePathTo(const SkPath& path) {
         return *this;
     }
 
-    const uint8_t* verbs = path.fPathRef->verbsEnd();
-    const uint8_t* verbsBegin = path.fPathRef->verbsBegin();
+    const SkPathVerb* verbs = path.fPathRef->verbsEnd();
+    const SkPathVerb* verbsBegin = path.fPathRef->verbsBegin();
     const SkPoint*  pts = path.fPathRef->pointsEnd() - 1;
     const SkScalar* conicWeights = path.fPathRef->conicWeightsEnd();
 
     while (verbs > verbsBegin) {
-        uint8_t v = *--verbs;
+        SkPathVerb v = *--verbs;
         pts -= SkPathPriv::PtsInVerb(v);
         switch (v) {
-            case SkPath::Verb::kMove_Verb:
+            case SkPathVerb::kMove:
                 // if the path has multiple contours, stop after reversing the last
                 return *this;
-            case SkPath::Verb::kLine_Verb:
+            case SkPathVerb::kLine:
                 this->lineTo(pts[0]);
                 break;
-            case SkPath::Verb::kQuad_Verb:
+            case SkPathVerb::kQuad:
                 this->quadTo(pts[1], pts[0]);
                 break;
-            case SkPath::Verb::kConic_Verb:
+            case SkPathVerb::kConic:
                 this->conicTo(pts[1], pts[0], *--conicWeights);
                 break;
-            case SkPath::Verb::kCubic_Verb:
+            case SkPathVerb::kCubic:
                 this->cubicTo(pts[2], pts[1], pts[0]);
                 break;
-            case SkPath::Verb::kClose_Verb:
-                break;
-            default:
-                SkDEBUGFAIL("bad verb");
+            case SkPathVerb::kClose:
                 break;
         }
     }
@@ -899,15 +895,15 @@ SkPathBuilder& SkPathBuilder::privateReversePathTo(const SkPath& path) {
 }
 
 SkPathBuilder& SkPathBuilder::privateReverseAddPath(const SkPath& src) {
-    const uint8_t* verbsBegin = src.fPathRef->verbsBegin();
-    const uint8_t* verbs = src.fPathRef->verbsEnd();
+    const SkPathVerb* verbsBegin = src.fPathRef->verbsBegin();
+    const SkPathVerb* verbs = src.fPathRef->verbsEnd();
     const SkPoint* pts = src.fPathRef->pointsEnd();
     const SkScalar* conicWeights = src.fPathRef->conicWeightsEnd();
 
     bool needMove = true;
     bool needClose = false;
     while (verbs > verbsBegin) {
-        uint8_t v = *--verbs;
+        SkPathVerb v = *--verbs;
         int n = SkPathPriv::PtsInVerb(v);
 
         if (needMove) {
@@ -940,8 +936,6 @@ SkPathBuilder& SkPathBuilder::privateReverseAddPath(const SkPath& src) {
             case SkPathVerb::kClose:
                 needClose = true;
                 break;
-            default:
-                SkDEBUGFAIL("unexpected verb");
         }
     }
     return *this;
