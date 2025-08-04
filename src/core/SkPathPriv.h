@@ -300,13 +300,17 @@ public:
     static bool IsAxisAligned(SkSpan<const SkPoint>);
     static bool IsAxisAligned(const SkPath& path);
 
-    static bool AllPointsEq(const SkPoint pts[], int count) {
-        for (int i = 1; i < count; ++i) {
+    static bool AllPointsEq(SkSpan<const SkPoint> pts) {
+        for (size_t i = 1; i < pts.size(); ++i) {
             if (pts[0] != pts[i]) {
                 return false;
             }
         }
         return true;
+    }
+
+    static bool AllPointsEq(const SkPoint pts[], int count) {
+        return AllPointsEq({pts, count});
     }
 
     static int LastMoveToIndex(const SkPath& path) { return path.fLastMoveToIndex; }
@@ -430,6 +434,18 @@ public:
             path.getFillType(),
             path.isConvex(),
             SkTo<uint8_t>(path.getSegmentMasks()),
+        };
+    }
+
+    static SkPathRaw Raw(const SkPathBuilder& builder) {
+        return {
+            builder.points(),
+            builder.verbs(),
+            builder.conicWeights(),
+            builder.computeBounds(),
+            builder.fillType(),
+            builder.fConvexity == SkPathConvexity::kConvex,
+            SkTo<uint8_t>(builder.fSegmentMask),
         };
     }
 };
