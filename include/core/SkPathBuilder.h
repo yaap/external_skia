@@ -357,6 +357,18 @@ public:
 
     // Relative versions of segments, relative to the previous position.
 
+    /** Adds beginning of contour relative to last point.
+        If SkPathBuilder is empty, starts contour at (dx, dy).
+        Otherwise, start contour at last point offset by (dx, dy).
+        Function name stands for "relative move to".
+
+        @param pt  vector offset from last point to contour start
+        @return    reference to SkPathBuilder
+
+        example: https://fiddle.skia.org/c/@Path_rMoveTo
+    */
+    SkPathBuilder& rMoveTo(SkPoint pt);
+
     /** Adds line from last point to vector given by pt. If SkPathBuilder is empty, or last
         SkPath::Verb is kClose_Verb, last point is set to (0, 0) before adding line.
 
@@ -843,8 +855,13 @@ public:
         @param matrix  SkMatrix to apply to SkPath
         @param pc      whether to apply perspective clipping
     */
-    SkPathBuilder& transform(const SkMatrix& matrix,
-                             SkApplyPerspectiveClip pc = SkApplyPerspectiveClip::kYes);
+    SkPathBuilder& transform(const SkMatrix& matrix);
+
+#ifdef SK_SUPPORT_LEGACY_APPLYPERSPECTIVECLIP
+    SkPathBuilder& transform(const SkMatrix& matrix, SkApplyPerspectiveClip) {
+        return this->transform(matrix);
+    }
+#endif
 
     /*
      *  Returns true if the builder is empty, or all of its points are finite.
@@ -912,6 +929,9 @@ public:
     SkSpan<const SkPathVerb> verbs() const {
         return fVerbs;
     }
+    SkSpan<const float> conicWeights() const {
+        return fConicWeights;
+    }
 
     SkPathBuilder& addRaw(const SkPathRaw&);
 
@@ -937,7 +957,7 @@ private:
     };
     IsA fIsA      = kIsA_JustMoves;
     int fIsAStart = -1;     // tracks direction iff fIsA is not unknown
-    bool fIsACCW  = false;  // tracks direction iff fIsA is not unknown
+    SkPathDirection fIsADirection = SkPathDirection::kCW;   // just so it has a value
 
     // called right before we add a (non-move) verb
     void ensureMove() {

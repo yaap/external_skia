@@ -105,6 +105,14 @@ public:
         return IsClosedSingleContour(path.fPathRef->verbs());
     }
 
+    /*
+     *  If we're transforming a known shape (oval or rrect), this computes what happens to its
+     *  - winding direction
+     *  - start index
+     */
+    static std::pair<SkPathDirection, unsigned>
+    TransformDirAndStart(const SkMatrix&, bool isRRect, SkPathDirection dir, unsigned start);
+
     // In some scenarios (e.g. fill or convexity checking all but the last leading move to are
     // irrelevant to behavior). SkPath::injectMoveToIfNeeded should ensure that this is always at
     // least 1.
@@ -300,13 +308,17 @@ public:
     static bool IsAxisAligned(SkSpan<const SkPoint>);
     static bool IsAxisAligned(const SkPath& path);
 
-    static bool AllPointsEq(const SkPoint pts[], int count) {
-        for (int i = 1; i < count; ++i) {
+    static bool AllPointsEq(SkSpan<const SkPoint> pts) {
+        for (size_t i = 1; i < pts.size(); ++i) {
             if (pts[0] != pts[i]) {
                 return false;
             }
         }
         return true;
+    }
+
+    static bool AllPointsEq(const SkPoint pts[], int count) {
+        return AllPointsEq({pts, count});
     }
 
     static int LastMoveToIndex(const SkPath& path) { return path.fLastMoveToIndex; }
@@ -430,6 +442,18 @@ public:
             path.getFillType(),
             path.isConvex(),
             SkTo<uint8_t>(path.getSegmentMasks()),
+        };
+    }
+
+    static SkPathRaw Raw(const SkPathBuilder& builder) {
+        return {
+            builder.points(),
+            builder.verbs(),
+            builder.conicWeights(),
+            builder.computeBounds(),
+            builder.fillType(),
+            builder.fConvexity == SkPathConvexity::kConvex,
+            SkTo<uint8_t>(builder.fSegmentMask),
         };
     }
 };

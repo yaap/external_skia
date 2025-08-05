@@ -2044,6 +2044,7 @@ cc_library_static {
           "src/image/SkImage_AndroidFactories.cpp",
           "src/ports/SkDebug_android.cpp",
           "src/ports/SkFontMgr_android_ndk.cpp",
+          "src/ports/SkFontMgr_android_parser.cpp",
           "src/ports/SkOSFile_posix.cpp",
           "src/ports/SkTypeface_proxy.cpp",
           "src/sksl/codegen/SkSLGLSLCodeGenerator.cpp",
