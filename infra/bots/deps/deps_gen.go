@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "0b095928b31253ffc9684e460e08cc5710c2c21c",
+		Version: "49dacbc10c7d3bfdb638299940e70e7f7fba0feb",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
@@ -249,7 +249,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
 		Id:      "swiftshader.googlesource.com/SwiftShader",
-		Version: "681d07e76d8e03286b231766447800aab543bd27",
+		Version: "fdb6700ecb04103b658d2e4623d6bc663ba80ea8",
 		Path:    "third_party/externals/swiftshader",
 	},
 }
