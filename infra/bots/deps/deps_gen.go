@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "cfeea900811ce40e73b770e8f13dcd38c2ba1633",
+		Version: "899f3505748e5f7a83994ef774c44a7b1b6a995a",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -144,7 +144,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/vulkan-deps": {
 		Id:      "chromium.googlesource.com/vulkan-deps",
-		Version: "c3c9f7778507ab7027458a04bb7e8d7e4af2f601",
+		Version: "1d9ad72b24bdb82d9e3c06387c1852316e418f17",
 		Path:    "third_party/externals/vulkan-deps",
 	},
 	"chromium.googlesource.com/webm/libwebp": {
@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "180eb3f989b3723ca8e446d987c28bacffc8bb53",
+		Version: "e07d4f333e7213cccc6e8674bd7e44ed9257a9ab",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
@@ -249,7 +249,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
 		Id:      "swiftshader.googlesource.com/SwiftShader",
-		Version: "98d09f8e88dbbdf463d18e7f25dcf02b3509485c",
+		Version: "fed7f25ca9577b7b619fa7f969bf123d98bc263a",
 		Path:    "third_party/externals/swiftshader",
 	},
 }
