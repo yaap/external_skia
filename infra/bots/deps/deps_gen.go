@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "4c834956bdaca1ffedac746bbebc5ee99bc5828a",
+		Version: "ff95cc93afacf096823e7202d57695710001c89a",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -144,7 +144,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/vulkan-deps": {
 		Id:      "chromium.googlesource.com/vulkan-deps",
-		Version: "a82edf8077499d9920c327838988850584847640",
+		Version: "6ab6cf8994f3b3ad8a6b2189986bd38e668e2fb1",
 		Path:    "third_party/externals/vulkan-deps",
 	},
 	"chromium.googlesource.com/webm/libwebp": {
@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "2c53c1b75e06d9540ac3508c64d2a295e9e60c0f",
+		Version: "bfb0f1fba4a0b1f10458d8f848c36ea77eeb4013",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
@@ -194,12 +194,12 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers": {
 		Id:      "skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers",
-		Version: "e6d5e88c07cc66a798b668945e7fb29ec1cfee27",
+		Version: "a8637796c28386c3cf3b4e8107020fbb52c46f3f",
 		Path:    "third_party/externals/spirv-headers",
 	},
 	"skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools": {
 		Id:      "skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools",
-		Version: "fda5a216e9d25fa2eeda73ec8436b96e395ce5d5",
+		Version: "a2834ad28b4fdeef23d130a53b58a6d4b69ea149",
 		Path:    "third_party/externals/spirv-tools",
 	},
 	"skia.googlesource.com/external/github.com/emscripten-core/emsdk": {
@@ -249,7 +249,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
 		Id:      "swiftshader.googlesource.com/SwiftShader",
-		Version: "fed7f25ca9577b7b619fa7f969bf123d98bc263a",
+		Version: "a1b94a283161e1c88e2dfa07f366394aea6ada9e",
 		Path:    "third_party/externals/swiftshader",
 	},
 }
