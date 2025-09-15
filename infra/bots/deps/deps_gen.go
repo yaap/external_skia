@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "a9061604eabb19af172ddffc11c3e6b3bc1a03aa",
+		Version: "af2f85f5494c8d97050ccc2a60cc738f225eb295",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
@@ -164,7 +164,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia.googlesource.com/buildbot": {
 		Id:      "skia.googlesource.com/buildbot",
-		Version: "a3f4e114d37b4b995e1f0c439e90a8944ea683b4",
+		Version: "3f6aa4f56ad128ed499c9e3637146177aa46680a",
 		Path:    "infra/skia-infra",
 	},
 	"skia.googlesource.com/external/github.com/AOMediaCodec/libavif": {
@@ -244,7 +244,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia/tools/sk": {
 		Id:      "skia/tools/sk",
-		Version: "git_revision:a3f4e114d37b4b995e1f0c439e90a8944ea683b4",
+		Version: "git_revision:3f6aa4f56ad128ed499c9e3637146177aa46680a",
 		Path:    "bin",
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
