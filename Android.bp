@@ -5373,6 +5373,7 @@ cc_defaults {
         "tests/graphite/KeyTest.cpp",
         "tests/graphite/MultisampleTest.cpp",
         "tests/graphite/MutableImagesTest.cpp",
+        "tests/graphite/NotifyInUseTest.cpp",
         "tests/graphite/PipelineDataCacheTest.cpp",
         "tests/graphite/ProxyCacheTest.cpp",
         "tests/graphite/RTEffectTest.cpp",
