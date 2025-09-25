@@ -21,10 +21,6 @@
   // Check error is expensive. HWUI historically also doesn't check its allocations
   #define GR_GL_CHECK_ALLOC_WITH_GET_ERROR 0
 
-  // Disable these Vulkan features until debugged
-  // b/439531864
-  #define SK_DISABLE_GRAPHICS_PIPELINE_LIBRARY
-
   // Graphite features
   #define SK_TRACE_GRAPHITE_PIPELINE_USE
 
