@@ -576,17 +576,6 @@ public:
         kExtend_AddPathMode,
     };
 
-    /** Returns SkPath with SkPoint array offset by (dx, dy).
-
-        @param dx  offset added to SkPoint array x-axis coordinates
-        @param dy  offset added to SkPoint array y-axis coordinates
-    */
-    SkPath makeOffset(SkScalar dx, SkScalar dy) const {
-        SkPath dst;
-        this->offset(dx, dy, &dst);
-        return dst;
-    }
-
     /** Return a copy of SkPath with verb array, SkPoint array, and weight transformed
         by matrix. makeTransform may change verbs and increase their number.
 
@@ -594,27 +583,20 @@ public:
         @param pc      whether to apply perspective clipping
         @return        SkPath
     */
-    SkPath makeTransform(const SkMatrix& matrix) const {
-        SkPath dst;
-        this->transform(matrix, &dst);
-        return dst;
+    SkPath makeTransform(const SkMatrix& matrix) const;
+
+    /** Returns SkPath with SkPoint array offset by (dx, dy).
+
+        @param dx  offset added to SkPoint array x-axis coordinates
+        @param dy  offset added to SkPoint array y-axis coordinates
+    */
+    SkPath makeOffset(SkScalar dx, SkScalar dy) const {
+        return this->makeTransform(SkMatrix::Translate(dx, dy));
     }
 
     SkPath makeScale(SkScalar sx, SkScalar sy) const {
         return this->makeTransform(SkMatrix::Scale(sx, sy));
     }
-
-#ifdef SK_SUPPORT_LEGACY_APPLYPERSPECTIVECLIP
-    void transform(const SkMatrix& matrix, SkPath* dst, SkApplyPerspectiveClip) const {
-        this->transform(matrix, dst);
-    }
-    void transform(const SkMatrix& matrix, SkApplyPerspectiveClip) {
-        this->transform(matrix);
-    }
-    SkPath makeTransform(const SkMatrix& m, SkApplyPerspectiveClip) const {
-        return this->makeTransform(m);
-    }
-#endif
 
     /** Return the last point, or {}
 
@@ -755,9 +737,7 @@ public:
     */
     SkPath& reset();
 
-#ifdef SK_HIDE_PATH_EDIT_METHODS
-private:
-#endif
+#ifndef SK_HIDE_PATH_EDIT_METHODS
     /** Returns a copy of this path in the current state, and resets the path to empty. */
     SkPath detach() {
         SkPath result = *this;
@@ -1450,6 +1430,29 @@ private:
     */
     SkPath& reverseAddPath(const SkPath& src);
 
+    /** Sets last point to (x, y). If SkPoint array is empty, append kMove_Verb to
+        verb array and append (x, y) to SkPoint array.
+
+        @param x  set x-axis value of last point
+        @param y  set y-axis value of last point
+
+        example: https://fiddle.skia.org/c/@Path_setLastPt
+    */
+    void setLastPt(SkScalar x, SkScalar y);
+
+    /** Sets the last point on the path. If SkPoint array is empty, append kMove_Verb to
+        verb array and append p to SkPoint array.
+
+        @param p  set value of last point
+    */
+    void setLastPt(const SkPoint& p) {
+        this->setLastPt(p.fX, p.fY);
+    }
+#endif
+
+#ifdef SK_HIDE_PATH_EDIT_METHODS
+private:
+#endif
     /** Offsets SkPoint array by (dx, dy). Offset SkPath replaces dst.
         If dst is nullptr, SkPath is replaced by offset data.
 
@@ -1495,29 +1498,10 @@ private:
         this->transform(matrix, this);
         return *this;
     }
-
-    /** Sets last point to (x, y). If SkPoint array is empty, append kMove_Verb to
-        verb array and append (x, y) to SkPoint array.
-
-        @param x  set x-axis value of last point
-        @param y  set y-axis value of last point
-
-        example: https://fiddle.skia.org/c/@Path_setLastPt
-    */
-    void setLastPt(SkScalar x, SkScalar y);
-
-    /** Sets the last point on the path. If SkPoint array is empty, append kMove_Verb to
-        verb array and append p to SkPoint array.
-
-        @param p  set value of last point
-    */
-    void setLastPt(const SkPoint& p) {
-        this->setLastPt(p.fX, p.fY);
-    }
-
 #ifdef SK_HIDE_PATH_EDIT_METHODS
 public:
 #endif
+
 #ifdef SK_SUPPORT_UNSPANNED_APIS
     static SkPath Make(const SkPoint points[], int pointCount,
                        const uint8_t verbs[], int verbCount,
@@ -1951,9 +1935,11 @@ private:
     //  SkPath path; path.lineTo(...);   <--- need a leading moveTo(0, 0)
     // SkPath path; ... path.close(); path.lineTo(...) <-- need a moveTo(previous moveTo)
     //
-    inline void injectMoveToIfNeeded();
+    void injectMoveToIfNeeded();
 
-    inline bool hasOnlyMoveTos() const;
+    bool hasOnlyMoveTos() const {
+        return this->getSegmentMasks() == 0;
+    }
 
     SkPathConvexity computeConvexity() const;
 
@@ -2005,14 +1991,6 @@ private:
      */
     void setConvexity(SkPathConvexity convexity);
 
-    /** Shrinks SkPath verb array and SkPoint array storage to discard unused capacity.
-     *  May reduce the heap overhead for SkPath known to be fully constructed.
-     *
-     *  NOTE: This may relocate the underlying buffers, and thus any Iterators referencing
-     *        this path should be discarded after calling shrinkToFit().
-     */
-    void shrinkToFit();
-
     // Creates a new Path after the supplied arguments have been validated by
     // SkPathPriv::AnalyzeVerbs().
     static SkPath MakeInternal(const SkPathVerbAnalysis& analsis,
@@ -2022,15 +2000,9 @@ private:
                                SkPathFillType fillType,
                                bool isVolatile);
 
-    friend class SkAutoAddSimpleShape;
-    friend class SkAutoDisableOvalCheck;
+    friend class SkAutoAddSimpleShape;  // setConvexity
     friend class SkPathBuilder;
-    friend class SkPathEdgeIter;
-    friend class SkPathWriter;
-    friend class SkOpBuilder;
-    friend class SkBench_AddPathTest; // perf test reversePathTo
     friend class PathTest_Private; // unit test reversePathTo
-    friend class FuzzPath; // for legacy access to validateRef
 };
 
 #endif

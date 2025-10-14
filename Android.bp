@@ -140,7 +140,11 @@ cc_defaults {
     local_include_dirs: [
         "",
         "modules/skcms",
-    ]
+    ],
+
+    sanitize: {
+        blocklist: "libskia_blocklist.txt",
+    },
 }
 
 cc_library_static {
@@ -321,6 +325,7 @@ cc_library_static {
         "src/core/SkPaintPriv.cpp",
         "src/core/SkPath.cpp",
         "src/core/SkPathBuilder.cpp",
+        "src/core/SkPathData.cpp",
         "src/core/SkPathDump.cpp",
         "src/core/SkPathEffect.cpp",
         "src/core/SkPathIter.cpp",
@@ -330,6 +335,7 @@ cc_library_static {
         "src/core/SkPathRawShapes.cpp",
         "src/core/SkPathRef.cpp",
         "src/core/SkPathUtils.cpp",
+        "src/core/SkPath_editing.cpp",
         "src/core/SkPath_serial.cpp",
         "src/core/SkPicture.cpp",
         "src/core/SkPictureData.cpp",
@@ -1345,6 +1351,7 @@ cc_library_static {
         "src/core/SkPaintPriv.cpp",
         "src/core/SkPath.cpp",
         "src/core/SkPathBuilder.cpp",
+        "src/core/SkPathData.cpp",
         "src/core/SkPathDump.cpp",
         "src/core/SkPathEffect.cpp",
         "src/core/SkPathIter.cpp",
@@ -1354,6 +1361,7 @@ cc_library_static {
         "src/core/SkPathRawShapes.cpp",
         "src/core/SkPathRef.cpp",
         "src/core/SkPathUtils.cpp",
+        "src/core/SkPath_editing.cpp",
         "src/core/SkPath_serial.cpp",
         "src/core/SkPicture.cpp",
         "src/core/SkPictureData.cpp",
@@ -3180,6 +3188,7 @@ cc_defaults {
         "tests/ParsePathTest.cpp",
         "tests/PathBuilderTest.cpp",
         "tests/PathCoverageTest.cpp",
+        "tests/PathDataTest.cpp",
         "tests/PathMeasureTest.cpp",
         "tests/PathOpsAngleIdeas.cpp",
         "tests/PathOpsAngleTest.cpp",
@@ -4139,6 +4148,7 @@ cc_defaults {
         "src/core/SkPaintPriv.cpp",
         "src/core/SkPath.cpp",
         "src/core/SkPathBuilder.cpp",
+        "src/core/SkPathData.cpp",
         "src/core/SkPathDump.cpp",
         "src/core/SkPathEffect.cpp",
         "src/core/SkPathIter.cpp",
@@ -4148,6 +4158,7 @@ cc_defaults {
         "src/core/SkPathRawShapes.cpp",
         "src/core/SkPathRef.cpp",
         "src/core/SkPathUtils.cpp",
+        "src/core/SkPath_editing.cpp",
         "src/core/SkPath_serial.cpp",
         "src/core/SkPicture.cpp",
         "src/core/SkPictureData.cpp",
@@ -5138,6 +5149,7 @@ cc_defaults {
         "tests/ParsePathTest.cpp",
         "tests/PathBuilderTest.cpp",
         "tests/PathCoverageTest.cpp",
+        "tests/PathDataTest.cpp",
         "tests/PathMeasureTest.cpp",
         "tests/PathOpsAngleIdeas.cpp",
         "tests/PathOpsAngleTest.cpp",

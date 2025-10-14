@@ -25,6 +25,7 @@
 #include <optional>
 #include <tuple>
 
+class SkPathData;
 class SkRRect;
 struct SkPathRaw;
 class SkString;
@@ -112,6 +113,9 @@ public:
         @return  SkPath representing the current state of the builder.
      */
     SkPath detach(const SkMatrix* mx = nullptr);
+
+    sk_sp<SkPathData> snapshotData() const;
+    sk_sp<SkPathData> detachData();
 
     /** Sets SkPathFillType, the rule used to fill SkPath. While there is no
         check that ft is legal, values outside of SkPathFillType are not supported.
@@ -874,12 +878,6 @@ public:
     */
     SkPathBuilder& transform(const SkMatrix& matrix);
 
-#ifdef SK_SUPPORT_LEGACY_APPLYPERSPECTIVECLIP
-    SkPathBuilder& transform(const SkMatrix& matrix, SkApplyPerspectiveClip) {
-        return this->transform(matrix);
-    }
-#endif
-
     /*
      *  Returns true if the builder is empty, or all of its points are finite.
      */
@@ -908,6 +906,14 @@ public:
         example: https://fiddle.skia.org/c/@Path_getLastPt
     */
     std::optional<SkPoint> getLastPt() const;
+
+    /** Change the point at the specified index (see countPoints()).
+     *  If index is out of range, the call does nothing.
+     *
+     *  @param index which point to replace
+     *  @param p the new point value
+     */
+    void setPoint(size_t index, SkPoint p);
 
     /** Sets the last point on the path. If SkPoint array is empty, append kMove_Verb to
         verb array and append p to SkPoint array.

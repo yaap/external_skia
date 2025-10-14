@@ -22,6 +22,7 @@
 
 #include "src/core/SkDraw.h"
 #include "src/core/SkMatrixPriv.h"
+#include "src/core/SkPathData.h"
 
 using namespace skia_private;
 
@@ -461,63 +462,23 @@ private:
     using INHERITED = RandomPathBench;
 };
 
-#ifndef SK_HIDE_PATH_EDIT_METHODS
-class PathTransformBench : public RandomPathBench {
-public:
-    PathTransformBench(bool inPlace) : fInPlace(inPlace) {}
-
-protected:
-    const char* onGetName() override {
-        return fInPlace ? "path_transform_in_place" : "path_transform_copy";
-    }
-
-    void onDelayedSetup() override {
-        fMatrix.setScale(5 * SK_Scalar1, 6 * SK_Scalar1);
-        this->createData(10, 100);
-        fPaths.reset(kPathCnt);
-        for (int i = 0; i < kPathCnt; ++i) {
-            fPaths[i] = this->makePath();
-        }
-        this->finishedMakingPaths();
-        if (!fInPlace) {
-            fTransformed.reset(kPathCnt);
-        }
-    }
-
-    void onDraw(int loops, SkCanvas*) override {
-        if (fInPlace) {
-            for (int i = 0; i < loops; ++i) {
-                fPaths[i & (kPathCnt - 1)].transform(fMatrix);
-            }
-        } else {
-            for (int i = 0; i < loops; ++i) {
-                int idx = i & (kPathCnt - 1);
-                fTransformed[idx] = fPaths[idx].makeTransform(fMatrix);
-            }
-        }
-    }
-
-private:
-    enum {
-        // must be a pow 2
-        kPathCnt = 1 << 5,
-    };
-    AutoTArray<SkPath> fPaths;
-    AutoTArray<SkPath> fTransformed;
-
-    SkMatrix fMatrix;
-    bool fInPlace;
-    using INHERITED = RandomPathBench;
+enum class BenchPathType {
+    kPath,
+    kBuilder,
+    kData,
 };
-#endif
+const char* gBenchPathTypeNames[] = { "path", "builder", "data" };
 
-class PathTransformPerspectiveBench : public Benchmark {
+class PathTransformBench : public Benchmark {
 public:
-    PathTransformPerspectiveBench(bool useBuilder) : fUseBuilder(useBuilder) {}
+    PathTransformBench(BenchPathType t, bool p) : fType(t), fPerspective(p) {
+        const char* mx = fPerspective ? "persp" : "affine";
+        fName.printf("path_transform_%s_%s", mx, gBenchPathTypeNames[(int)fType]);
+    }
 
 protected:
     const char* onGetName() override {
-        return fUseBuilder ? "transform_perspective_builder" : "transform_perspective_path";
+        return fName.c_str();
     }
 
     bool isSuitableFor(Backend backend) override {
@@ -529,29 +490,103 @@ protected:
         fBuilderSrc.addOval(r);
         fBuilderSrc.addOval(r.makeInset(10, 10));
         fPathSrc = fBuilderSrc.snapshot();
+        fPData = fBuilderSrc.snapshotData();
 
-        fMatrix[6] = 1;
+        if (fPerspective) {
+            fMatrix[6] = 0.0000001f;
+        } else {
+            fMatrix[0] = 1.000001f;
+        }
     }
 
     void onDraw(int loops, SkCanvas*) override {
-        if (fUseBuilder) {
-            for (int i = 0; i < loops; ++i) {
-                fBuilderSrc.transform(fMatrix);
-                (void)fBuilderSrc.snapshot();
-            }
-        } else {
-            for (int i = 0; i < loops; ++i) {
-                (void)fPathSrc.makeTransform(fMatrix);
-            }
+        // we ask for bounds each time, to ensure we're playing fair, as some
+        // techniques compute bounds up front after a transform, and some defer
+        // it until it is first requested.
+        for (int i = 0; i < loops; ++i) {
+            switch (fType) {
+                case BenchPathType::kPath:
+                    fPathSrc.makeTransform(fMatrix).getBounds();
+                    break;
+                case BenchPathType::kBuilder:
+                    fBuilderSrc.transform(fMatrix);
+                    fBuilderSrc.snapshot().getBounds();
+                    break;
+                case BenchPathType::kData:
+                    fPData->makeTransform(fMatrix)->bounds();
+                    break;
+                }
         }
     }
 
 private:
     SkPath          fPathSrc;
     SkPathBuilder   fBuilderSrc;
+    sk_sp<SkPathData> fPData;
 
-    SkMatrix fMatrix;
-    bool fUseBuilder;
+    SkMatrix      fMatrix;
+    BenchPathType fType;
+    bool          fPerspective;
+    SkString      fName;
+};
+
+static void builder_from_rect(const SkRRect& r) {
+    SkPathBuilder bu; bu.addRect(r.rect()); (void)bu.detach();
+}
+static void builder_from_oval(const SkRRect& r) {
+    SkPathBuilder bu; bu.addOval(r.rect()); (void)bu.detach();
+}
+static void builder_from_rrect(const SkRRect& r) {
+    SkPathBuilder bu; bu.addRRect(r); (void)bu.detach();
+}
+
+static void path_from_rect(const SkRRect& r) {
+    (void)SkPath::Rect(r.rect());
+}
+static void path_from_oval(const SkRRect& r) {
+    (void)SkPath::Oval(r.rect());
+}
+static void path_from_rrect(const SkRRect& r) {
+    (void)SkPath::RRect(r);
+}
+
+static void pdata_from_rect(const SkRRect& r) {
+    (void)SkPathData::Rect(r.rect());
+}
+static void pdata_from_oval(const SkRRect& r) {
+    (void)SkPathData::Oval(r.rect());
+}
+static void pdata_from_rrect(const SkRRect& r) {
+    (void)SkPathData::RRect(r);
+}
+
+class PathMakeFromBench : public Benchmark {
+public:
+    using MakeFrom = void(const SkRRect&);
+
+    PathMakeFromBench(const char name[], MakeFrom* proc) : fMaker(proc) {
+        fName.printf("pathmaker_%s", name);
+    }
+
+protected:
+    const char* onGetName() override {
+        return fName.c_str();
+    }
+
+    bool isSuitableFor(Backend backend) override {
+        return backend == Backend::kNonRendering;
+    }
+
+    void onDraw(int loops, SkCanvas*) override {
+        const SkRRect rr = SkRRect::MakeRectXY({10, 20, 30, 40}, 2, 3);
+        for (int i = 0; i < loops; ++i) {
+            fMaker(rr);
+        }
+    }
+
+private:
+    MakeFrom*   fMaker;
+    SkString    fName;
 };
 
 class PathEqualityBench : public RandomPathBench {
@@ -593,6 +628,7 @@ private:
     using INHERITED = RandomPathBench;
 };
 
+#ifndef SK_HIDE_PATH_EDIT_METHODS
 class SkBench_AddPathTest : public RandomPathBench {
 public:
     enum AddType {
@@ -600,7 +636,6 @@ public:
         kAddTrans_AddType,
         kAddMatrix_AddType,
         kReverseAdd_AddType,
-        kReversePathTo_AddType,
     };
 
     SkBench_AddPathTest(AddType type) : fType(type) {
@@ -618,8 +653,6 @@ protected:
                 return "path_add_path_matrix";
             case kReverseAdd_AddType:
                 return "path_reverse_add_path";
-            case kReversePathTo_AddType:
-                return "path_reverse_path_to";
             default:
                 SkDEBUGFAIL("Bad add type");
                 return "";
@@ -627,9 +660,7 @@ protected:
     }
 
     void onDelayedSetup() override {
-        // reversePathTo assumes a single contour path.
-        bool allowMoves = kReversePathTo_AddType != fType;
-        this->createData(10, 100, allowMoves);
+        this->createData(10, 100, true);
         fPaths0.reset(kPathCnt);
         fPaths1.reset(kPathCnt);
         for (int i = 0; i < kPathCnt; ++i) {
@@ -669,13 +700,6 @@ protected:
                     result.reverseAddPath(fPaths1[idx]);
                 }
                 break;
-            case kReversePathTo_AddType:
-                for (int i = 0; i < loops; ++i) {
-                    int idx = i & (kPathCnt - 1);
-                    SkPath result = fPaths0[idx];
-                    result.reversePathTo(fPaths1[idx]);
-                }
-                break;
         }
     }
 
@@ -690,7 +714,7 @@ private:
     SkMatrix         fMatrix;
     using INHERITED = RandomPathBench;
 };
-
+#endif
 
 class CirclesBench : public Benchmark {
 protected:
@@ -1211,10 +1235,10 @@ DEF_BENCH( return new RectPathBench(FLAGS01); )
 DEF_BENCH( return new RectPathBench(FLAGS10); )
 DEF_BENCH( return new RectPathBench(FLAGS11); )
 
-DEF_BENCH( return new RotatedRectBench(FLAGS00, false, 45));
-DEF_BENCH( return new RotatedRectBench(FLAGS10, false, 45));
-DEF_BENCH( return new RotatedRectBench(FLAGS00, true, 45));
-DEF_BENCH( return new RotatedRectBench(FLAGS10, true, 45));
+DEF_BENCH( return new RotatedRectBench(FLAGS00, false, 45))
+DEF_BENCH( return new RotatedRectBench(FLAGS10, false, 45))
+DEF_BENCH( return new RotatedRectBench(FLAGS00, true, 45))
+DEF_BENCH( return new RotatedRectBench(FLAGS10, true, 45))
 
 DEF_BENCH( return new OvalPathBench(FLAGS00); )
 DEF_BENCH( return new OvalPathBench(FLAGS01); )
@@ -1244,20 +1268,38 @@ DEF_BENCH( return new LongLinePathBench(FLAGS01); )
 
 DEF_BENCH( return new PathCreateBench(); )
 DEF_BENCH( return new PathCopyBench(); )
-#ifndef SK_HIDE_PATH_EDIT_METHODS
-DEF_BENCH( return new PathTransformBench(true); )
-DEF_BENCH( return new PathTransformBench(false); )
-#endif
 DEF_BENCH( return new PathEqualityBench(); )
 
-DEF_BENCH( return new PathTransformPerspectiveBench(true); )
-DEF_BENCH( return new PathTransformPerspectiveBench(false); )
+DEF_BENCH( return new PathTransformBench(BenchPathType::kData,    true); )
+DEF_BENCH( return new PathTransformBench(BenchPathType::kBuilder, true); )
+DEF_BENCH( return new PathTransformBench(BenchPathType::kPath,    true); )
 
+DEF_BENCH( return new PathTransformBench(BenchPathType::kData,    false); )
+DEF_BENCH( return new PathTransformBench(BenchPathType::kBuilder, false); )
+DEF_BENCH( return new PathTransformBench(BenchPathType::kPath,    false); )
+
+#define MAKEFROM(name)  PathMakeFromBench(#name, name);
+
+DEF_BENCH( return new MAKEFROM(pdata_from_rrect) )
+DEF_BENCH( return new MAKEFROM(builder_from_rrect) )
+DEF_BENCH( return new MAKEFROM(path_from_rrect) )
+
+DEF_BENCH( return new MAKEFROM(pdata_from_oval) )
+DEF_BENCH( return new MAKEFROM(builder_from_oval) )
+DEF_BENCH( return new MAKEFROM(path_from_oval) )
+
+DEF_BENCH( return new MAKEFROM(pdata_from_rect) )
+DEF_BENCH( return new MAKEFROM(builder_from_rect) )
+DEF_BENCH( return new MAKEFROM(path_from_rect) )
+
+#undef MAKEFROM
+
+#ifndef SK_HIDE_PATH_EDIT_METHODS
 DEF_BENCH( return new SkBench_AddPathTest(SkBench_AddPathTest::kAdd_AddType); )
 DEF_BENCH( return new SkBench_AddPathTest(SkBench_AddPathTest::kAddTrans_AddType); )
 DEF_BENCH( return new SkBench_AddPathTest(SkBench_AddPathTest::kAddMatrix_AddType); )
 DEF_BENCH( return new SkBench_AddPathTest(SkBench_AddPathTest::kReverseAdd_AddType); )
-DEF_BENCH( return new SkBench_AddPathTest(SkBench_AddPathTest::kReversePathTo_AddType); )
+#endif
 
 DEF_BENCH( return new CirclesBench(FLAGS00); )
 DEF_BENCH( return new CirclesBench(FLAGS01); )
@@ -1366,10 +1408,10 @@ private:
 
 DEF_BENCH( return new PathBuildBench("addRect", [](const SkRect& r) {
     return SkPath::Rect(r);
-}));
+}))
 DEF_BENCH( return new PathBuildBench("addOval", [](const SkRect& r) {
     return SkPath::Oval(r);
-}));
+}))
 DEF_BENCH( return new PathBuildBench("addRRect", [](const SkRect& r) {
     return SkPath::RRect(SkRRect::MakeRectXY(r, 0.1f, 0.1f));
-}));
+}))
