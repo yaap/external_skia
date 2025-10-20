@@ -9,12 +9,30 @@
 
 #include "include/effects/SkRuntimeEffect.h"
 #include "src/core/SkRuntimeEffectPriv.h"
+#include "src/gpu/graphite/DrawContext.h"
 #include "src/gpu/graphite/PaintParams.h"
 #include "src/gpu/graphite/RecorderPriv.h"
+#include "src/gpu/graphite/RuntimeEffectDictionary.h"
 
 namespace skgpu::graphite {
 
+KeyContext::KeyContext(const Caps* caps,
+                       FloatStorageManager* floatStorageManager,
+                       PaintParamsKeyBuilder* paintParamsKeyBuilder,
+                       PipelineDataGatherer* pipelineDataGatherer,
+                       ShaderCodeDictionary* dict,
+                       sk_sp<RuntimeEffectDictionary> rtEffectDict,
+                       const SkColorInfo& dstColorInfo)
+            : fFloatStorageManager(floatStorageManager)
+            , fPaintParamsKeyBuilder(paintParamsKeyBuilder)
+            , fPipelineDataGatherer(pipelineDataGatherer)
+            , fDictionary(dict)
+            , fRTEffectDict(std::move(rtEffectDict))
+            , fDstColorInfo(dstColorInfo)
+            , fCaps(caps) {}
+
 KeyContext::KeyContext(skgpu::graphite::Recorder* recorder,
+                       DrawContext* drawContext,
                        FloatStorageManager* floatStorageManager,
                        PaintParamsKeyBuilder* paintParamsKeyBuilder,
                        PipelineDataGatherer* pipelineDataGatherer,
@@ -23,6 +41,7 @@ KeyContext::KeyContext(skgpu::graphite::Recorder* recorder,
                        SkEnumBitMask<KeyGenFlags> initialFlags,
                        const SkColor4f& paintColor)
         : fRecorder(recorder)
+        , fDC(drawContext)
         , fFloatStorageManager(floatStorageManager)
         , fPaintParamsKeyBuilder(paintParamsKeyBuilder)
         , fPipelineDataGatherer(pipelineDataGatherer)
@@ -39,6 +58,7 @@ KeyContext::KeyContext(skgpu::graphite::Recorder* recorder,
 
 KeyContext::KeyContext(const KeyContext& other)
         : fRecorder(other.fRecorder)
+        , fDC(other.fDC)
         , fFloatStorageManager(other.fFloatStorageManager)
         , fPaintParamsKeyBuilder(other.fPaintParamsKeyBuilder)
         , fPipelineDataGatherer(other.fPipelineDataGatherer)
@@ -50,6 +70,10 @@ KeyContext::KeyContext(const KeyContext& other)
         , fPaintColor(other.fPaintColor)
         , fKeyGenFlags(other.fKeyGenFlags)
         , fCaps(other.fCaps) {}
+
+KeyContext::~KeyContext() {}
+
+sk_sp<RuntimeEffectDictionary> KeyContext::rtEffectDict() const { return fRTEffectDict; }
 
 KeyContextForRuntimeEffect::KeyContextForRuntimeEffect(const KeyContext& other,
                                                        const SkRuntimeEffect* effect,

@@ -76,6 +76,8 @@ class Clip;
 class DrawContext;
 class Geometry;
 class Image;
+class PaintParamsKeyBuilder;
+class PipelineDataGatherer;
 class PathAtlas;
 class Renderer;
 class Shape;
@@ -161,6 +163,15 @@ public:
     // Only used for scratch devices.
     sk_sp<Task> lastDrawTask() const;
 
+    // Called by an Image wrapping this Device to mark that the pending contents of this Device
+    // will be read by `recorder`, and specifically by `drawContext` (if non-null). Flushes any
+    // necessary work (depending on scratch state) and records task dependencies. Returns true if
+    // the caller does not need to track the Device on the Image anymore.
+    bool notifyInUse(Recorder* recorder, DrawContext* drawContext);
+
+    // Returns true if the Device has pending reads to the given texture
+    bool hasPendingReads(const TextureProxy* texture) const;
+
     bool useDrawCoverageMaskForMaskFilters() const override { return true; }
 
     // Clipping
@@ -196,7 +207,7 @@ public:
     void drawRRect(const SkRRect& rr, const SkPaint&) override;
     void drawArc(const SkArc& arc, const SkPaint&) override;
     void drawPoints(SkCanvas::PointMode, SkSpan<const SkPoint>, const SkPaint&) override;
-    void drawPath(const SkPath& path, const SkPaint&, bool pathIsMutable = false) override;
+    void drawPath(const SkPath& path, const SkPaint&) override;
     void drawDRRect(const SkRRect& outer, const SkRRect& inner, const SkPaint&) override;
 
     // No need to specialize drawRegion or drawPatch as the default impls all route to drawPath,
@@ -341,6 +352,9 @@ private:
     // some other task chain that makes it to the root list.
     sk_sp<Task> fLastTask;
 
+    std::unique_ptr<PaintParamsKeyBuilder> fKeyBuilder;
+    std::unique_ptr<PipelineDataGatherer> fDataGatherer;
+
     ClipStack fClip;
 
     // Tracks accumulated intersections for ordering dependent use of the color and depth attachment
@@ -357,6 +371,15 @@ private:
 
     // The DrawContext's target supports MSAA
     bool fMSAASupported = false;
+    // Even when MSAA is supported, small paths may be sent to the atlas for higher quality and to
+    // avoid triggering MSAA overhead on a render pass. However, the number of paths is capped
+    // per Device flush.
+    int fAtlasedPathCount = 0;
+    // True if this Device has been drawn into another Device, in which case that other Device
+    // depends on this Device's prior contents, so flushing this device with pending work must
+    // also flush anything else that samples from it. If this is false, it's safe to skip checking
+    // tracked devices for dependencies.
+    bool fMustFlushDependencies = false;
 
     // TODO(b/330864257): Clean up once flushPendingWorkToRecorder() doesn't have to be re-entrant
     bool fIsFlushing = false;

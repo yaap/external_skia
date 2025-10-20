@@ -37,13 +37,13 @@
 #include "src/utils/SkOSPath.h"
 #include "tools/flags/CommandLineFlags.h"
 
-#if !defined(CPU_ONLY)
+#if !defined(CPU_ONLY) && defined(SK_GANESH)
 #include "include/gpu/GpuTypes.h"
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/GrTypes.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
+#include "tools/ganesh/GrContextFactory.h"
 #include "tools/gpu/ContextType.h"
-#include "tools/gpu/GrContextFactory.h"
 #endif
 
 #if !defined(CPU_ONLY) && !defined(GPU_ONLY)
@@ -340,7 +340,7 @@ private:
 
 class GPUGenerator final : public FrameGenerator {
 public:
-#if defined(CPU_ONLY)
+#if defined(CPU_ONLY) || !defined(SK_GANESH)
     static std::unique_ptr<FrameGenerator> Make(FrameSink* sink, const SkMatrix& matrix) {
         return nullptr;
     }

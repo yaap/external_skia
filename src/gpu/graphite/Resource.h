@@ -181,7 +181,18 @@ public:
         this->removeRef<RefType::kCommandBuffer>();
     }
 
+    // Whether the resource is currently in use by the GPU: any resource that is used in a command
+    // buffer is considered in use by the GPU.
+    //
+    // NOTE: This is currently only correct for textures, hence the name. Once the rest of the
+    // resources use the command buffer ref instead of usage ref appropriately, this can be made
+    // more generaic.
+    bool isTextureBusyOnGPU() const {
+        return (fRefs.load(std::memory_order_acquire) & RefMask(RefType::kCommandBuffer)) != 0;
+    }
+
     Ownership ownership() const { return fOwnership; }
+    bool requiresPrepareForReturnToCache() const { return fRequiresPrepareForReturnToCache; }
 
     Budgeted budgeted() const { return fBudgeted; }
     Shareable shareable() const { return fShareable; }
@@ -255,7 +266,8 @@ protected:
     Resource(const SharedContext*,
              Ownership,
              size_t gpuMemorySize,
-             bool reusableRequiresPurgeable = false);
+             bool reusableRequiresPurgeable = false,
+             bool requiresPrepareForReturnToCache = false);
     virtual ~Resource();
 
     const SharedContext* sharedContext() const { return fSharedContext; }
@@ -622,8 +634,9 @@ private:
     // That call will set this to nullptr.
     const SharedContext* fSharedContext;
 
-    const Ownership fOwnership;
     const UniqueID fUniqueID;
+    const Ownership fOwnership;
+    const bool fRequiresPrepareForReturnToCache;
 
     // The resource key and return cache are both set at most once, during registerWithCache().
     /*const*/ GraphiteResourceKey  fKey;

@@ -148,8 +148,8 @@ DEF_TEST(FontMgr_Iter, reporter) {
 
             sk_sp<SkTypeface> face2(fm->matchFamilyStyle(name1.c_str(), s1));
             if (!face2) {
-                // The Ubunutu 18.04 test machines have Noto Emoji but it cannot be found by name.
-                if (name1.equals("Noto Emoji")) {
+                // Some fonts cannot be looked up by name on our test machines
+                if (name1.equals("Noto Emoji") || name1.equals("Noto Sans Phags Pa")) {
                     continue;
                 }
                 REPORTER_ASSERT(reporter, face2.get(), "Could not find %s", name1.c_str());
@@ -184,6 +184,12 @@ DEF_TEST(FontMgr_MatchFamilyStyle, reporter) {
     using FS = SkFontStyle;
     sk_sp<SkTypeface> typeface(fm->matchFamilyStyle("Non Existing Family Name", FS::Normal()));
     REPORTER_ASSERT(reporter, !typeface);
+
+    // Test a long name with many interesting case folding code points.
+    using FS = SkFontStyle;
+    sk_sp<SkTypeface> typeface1(fm->matchFamilyStyle("ῢ ΰ ῤ ῦ ῧ Ῠ Ῡ Ὺ Ύ Ῥ ῲ ῳ ῴ ῶ ῷ Ὸ Ό Ὼ Ώ ῼ",
+                                                     FS::Normal()));
+    REPORTER_ASSERT(reporter, !typeface1);
 
     // TODO: enable after determining if a default font should be required.
     if ((false)) {

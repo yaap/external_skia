@@ -17,12 +17,14 @@
 #include <optional>
 
 class SkData;
+class SkExecutor;
 class SkRuntimeEffect;
 namespace skgpu { class ShaderErrorHandler; }
 
 namespace skgpu::graphite {
 
 struct ContextOptionsPriv;
+class PersistentPipelineStorage;
 
 struct SK_API ContextOptions {
     ContextOptions() {}
@@ -178,6 +180,22 @@ struct SK_API ContextOptions {
      * This includes adding, removing or reordering the effects provided here.
      */
     SkSpan<sk_sp<SkRuntimeEffect>> fUserDefinedKnownRuntimeEffects;
+
+    /**
+     * Executor to handle threaded work within Graphite. If this is nullptr, then all work will be
+     * done serially on the main thread. To have worker threads assist with various tasks, set this
+     * to a valid SkExecutor instance. Currently, used for Pipeline compilation, but may be used
+     * for other tasks. It is up to the client to ensure the SkExecutor remains valid throughout
+     * the lifetime of the Context.
+     */
+    SkExecutor* fExecutor = nullptr;
+
+    /**
+     * Allows Graphite to store Pipeline data across Context lifetimes. It is up to the
+     * client to ensure the PersistentPipelineStorage object remains valid throughout the lifetime
+     * of the Context(s).
+     */
+    PersistentPipelineStorage* fPersistentPipelineStorage = nullptr;
 
     /**
      * An experimental flag in development. Behavior and performance is subject to change.

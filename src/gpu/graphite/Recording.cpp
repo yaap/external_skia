@@ -20,6 +20,7 @@
 #include "src/gpu/graphite/Log.h"
 #include "src/gpu/graphite/RecordingPriv.h"
 #include "src/gpu/graphite/Resource.h"
+#include "src/gpu/graphite/RuntimeEffectDictionary.h"
 #include "src/gpu/graphite/Surface_Graphite.h"
 #include "src/gpu/graphite/Texture.h"
 #include "src/gpu/graphite/TextureProxy.h"
@@ -200,7 +201,7 @@ const Texture* RecordingPriv::setupDeferredTarget(ResourceProvider* resourceProv
 
 bool RecordingPriv::prepareResources(ResourceProvider* resourceProvider,
                                      ScratchResourceManager* scratchManager,
-                                     RuntimeEffectDictionary* rteDict) {
+                                     sk_sp<const RuntimeEffectDictionary> rteDict) {
     Task::Status status = fRecording->fRootTaskList->prepareResources(
             resourceProvider, scratchManager, rteDict);
     if (status == Task::Status::kSuccess) {
@@ -213,7 +214,7 @@ bool RecordingPriv::prepareResources(ResourceProvider* resourceProvider,
                 }
             }
             return true;
-        });
+        }, /*readsOnly=*/false);
     }
 
     return status != Task::Status::kFail;
@@ -225,7 +226,7 @@ bool RecordingPriv::addCommands(Context* context,
                                 SkIVector targetTranslation,
                                 SkIRect targetClip) {
     for (size_t i = 0; i < fRecording->fExtraResourceRefs.size(); ++i) {
-        commandBuffer->trackResource(fRecording->fExtraResourceRefs[i]);
+        commandBuffer->trackCommandBufferResource(fRecording->fExtraResourceRefs[i]);
     }
 
     // There's no need to differentiate kSuccess and kDiscard at the root list level; if every task

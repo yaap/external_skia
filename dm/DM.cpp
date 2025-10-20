@@ -66,10 +66,6 @@
     #include <unistd.h>
 #endif
 
-#if defined(SK_BUILD_FOR_ANDROID_FRAMEWORK) && defined(SK_HAS_HEIF_LIBRARY)
-    #include <binder/IPCThreadState.h>
-#endif
-
 #if defined(SK_BUILD_FOR_MAC)
     #include "include/utils/mac/SkCGUtils.h"
     #include "src/utils/mac/SkUniqueCFRef.h"
@@ -1006,6 +1002,10 @@ static Sink* create_sink(const GrContextOptions& grCtxOptions,
 #if defined(SK_GRAPHITE)
     if (FLAGS_graphite) {
         if (const SkCommandLineConfigGraphite *graphiteConfig = config->asConfigGraphite()) {
+            if (graphiteConfig->getTestPersistentStorage()) {
+                return new GraphitePersistentPipelineStorageTestingSink(graphiteConfig,
+                                                                        graphiteOptions);
+            } else
 #if defined(SK_ENABLE_PRECOMPILE)
             if (graphiteConfig->getTestPrecompileGraphite()) {
                 return new GraphitePrecompileTestingSink(graphiteConfig, graphiteOptions);
@@ -1578,9 +1578,6 @@ TestHarness CurrentTestHarness() {
 #endif // !SK_DISABLE_LEGACY_TESTS
 
 int main(int argc, char** argv) {
-#if defined(SK_BUILD_FOR_ANDROID_FRAMEWORK) && defined(SK_HAS_HEIF_LIBRARY)
-    android::ProcessState::self()->startThreadPool();
-#endif
     CommandLineFlags::Parse(argc, argv);
 
     initializeEventTracingForTools();

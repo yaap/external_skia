@@ -32,7 +32,14 @@ public:
     SkPathIter(SkSpan<const SkPoint> pts, SkSpan<const SkPathVerb> vbs, SkSpan<const float> cns)
         : pIndex(0), vIndex(0), cIndex(0)
         , fPoints(pts), fVerbs(vbs), fConics(cns)
-    {}
+    {
+        // For compat older iterators, we trim off a trailing Move.
+        // SkPathData is defined to never create this pattern, so perhaps in the future
+        // this check can be removed (or replaced by an assert)
+        if (!vbs.empty() && vbs.back() == SkPathVerb::kMove) {
+            fVerbs = vbs.first(vbs.size() - 1);
+        }
+    }
 
     /*  Holds the current verb, and its associated points
      *  move:  pts[0]
@@ -43,6 +50,13 @@ public:
      *  close: pts[0..1] ... as if close were a line from pts[0] to pts[1]
      */
     std::optional<Rec> next();
+
+    std::optional<SkPathVerb> peekNextVerb() const {
+        if (vIndex < fVerbs.size()) {
+            return fVerbs[vIndex];
+        }
+        return {};
+    }
 
 private:
     size_t                   pIndex, vIndex, cIndex;

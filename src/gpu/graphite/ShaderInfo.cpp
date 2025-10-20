@@ -647,7 +647,7 @@ void collect_lifted_expressions(SkSpan<const ShaderNode*> nodes,
 
         collect_lifted_expressions(node->children(), childArgs, lifted);
     }
-};
+}
 
 std::vector<LiftedExpression> collect_lifted_expressions(SkSpan<const ShaderNode*> nodes) {
     std::vector<LiftedExpression> lifted;
@@ -793,6 +793,9 @@ std::unique_ptr<ShaderInfo> ShaderInfo::Make(const Caps* caps,
                                      outDescs,
                                      shaderNodeAlloc,
                                      &rootNodes);
+    } else {
+        // Disable color write if there is no fragment shader
+        result->fBlendInfo.fWritesColor = false;
     }
 
     result->generateVertexSkSL(caps, step, useStorageBuffers, rootNodes);
@@ -822,10 +825,8 @@ std::string dst_read_strategy_to_str(DstReadStrategy strategy) {
             return "ReadFromInput";
         case DstReadStrategy::kFramebufferFetch:
             return "FramebufferFetch";
-        default:
-            SkUNREACHABLE;
     }
-    return "";
+    SkUNREACHABLE;
 }
 } // anonymous
 

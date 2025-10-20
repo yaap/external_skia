@@ -7,6 +7,7 @@
 
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkColor.h"
 #include "include/core/SkImage.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkRect.h"
@@ -58,11 +59,21 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    sk_sp<SkSurface> surfaceB =
+            SkSurfaces::RenderTarget(recorder.get(), imageInfo);
+    if (!surfaceB) {
+        printf("Could not make second surface from Metal Recorder\n");
+        return 1;
+    }
+
     /* DRAWING */
     context->startCapture();
     printf("Capture started, now to draw\n");
 
     SkCanvas* canvas = surface->getCanvas();
+    SkCanvas* canvasB = surfaceB->getCanvas();
+
+    // Canvas A
     canvas->clear(SK_ColorCYAN);
     SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeLTRB(10, 20, 50, 70), 10, 10);
 
@@ -71,6 +82,17 @@ int main(int argc, char *argv[]) {
     paint.setAntiAlias(true);
 
     canvas->drawRRect(rrect, paint);
+
+    // Triggers a breakpoint in the capture
+    auto contentImg = surface->makeImageSnapshot();
+
+    canvas->drawCircle(5, 5, 2.5, paint);
+
+    // Canvas B
+    canvasB->clear(SK_ColorMAGENTA);
+    paint.setColor(SK_ColorBLACK);
+    canvasB->drawImage(contentImg, 0, 0);
+    canvasB->drawCircle(10, 10, 5, paint);
 
     printf("ready to snap the GPU calls\n");
     // Now to send the draws to the GPU

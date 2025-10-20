@@ -39,7 +39,9 @@ GraphiteDawnWindowContext::GraphiteDawnWindowContext(std::unique_ptr<const Displ
 }
 
 void GraphiteDawnWindowContext::initializeContext(int width, int height) {
+#if defined(SK_GANESH)
     SkASSERT(!fContext);
+#endif
 
     fWidth = width;
     fHeight = height;
@@ -61,7 +63,7 @@ void GraphiteDawnWindowContext::initializeContext(int width, int height) {
     // Needed to make synchronous readPixels work:
     opts.fPriv.fStoreContextRefInRecorder = true;
     fDisplayParams =
-            GraphiteDisplayParamsBuilder(fDisplayParams.get()).graphiteTestOptions(opts).build();
+            GraphiteDisplayParamsBuilder(fDisplayParams.get()).graphiteTestOptions(opts).detach();
 
     fGraphiteContext = skgpu::graphite::ContextFactory::MakeDawn(backendContext,
                                                                  opts.fTestOptions.fContextOptions);
