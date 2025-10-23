@@ -104,7 +104,7 @@ public:
                           SkPathFillType fillType = SkPathFillType::kDefault,
                           bool isVolatile = false);
 
-    static SkPath Line(const SkPoint a, const SkPoint b) {
+    static SkPath Line(SkPoint a, SkPoint b) {
         return Polygon({a, b}, false);
     }
 
@@ -191,6 +191,9 @@ public:
         return !(a == b);
     }
 
+// Note: These 3 interpolate() methods no long use any private access/info,
+//       and could trivially be implemented directly by the client.
+
     /** Returns true if SkPath contain equal verbs and equal weights.
         If SkPath contain one or more conics, the weights must match.
 
@@ -226,6 +229,29 @@ public:
         example: https://fiddle.skia.org/c/@Path_interpolate
     */
     SkPath makeInterpolate(const SkPath& ending, SkScalar weight) const;
+
+    /** Interpolates between SkPath with SkPoint array of equal size.
+        Copy verb array and weights to out, and set out SkPoint array to a weighted
+        average of this SkPoint array and ending SkPoint array, using the formula:
+        (Path Point * weight) + ending Point * (1 - weight).
+
+        weight is most useful when between zero (ending SkPoint array) and
+        one (this Point_Array); will work with values outside of this
+        range.
+
+        interpolate() returns false and leaves out unchanged if SkPoint array is not
+        the same size as ending SkPoint array. Call isInterpolatable() to check SkPath
+        compatibility prior to calling interpolate().
+
+        @param ending  SkPoint array averaged with this SkPoint array
+        @param weight  contribution of this SkPoint array, and
+                       one minus contribution of ending SkPoint array
+        @param out     SkPath replaced by interpolated averages
+        @return        true if SkPath contain same number of SkPoint
+
+        example: https://fiddle.skia.org/c/@Path_interpolate
+    */
+    bool interpolate(const SkPath& ending, SkScalar weight, SkPath* out) const;
 
     /** Returns SkPathFillType, the rule used to fill SkPath.
 
@@ -714,29 +740,6 @@ public:
     */
     void swap(SkPath& other);
 
-    /** Interpolates between SkPath with SkPoint array of equal size.
-        Copy verb array and weights to out, and set out SkPoint array to a weighted
-        average of this SkPoint array and ending SkPoint array, using the formula:
-        (Path Point * weight) + ending Point * (1 - weight).
-
-        weight is most useful when between zero (ending SkPoint array) and
-        one (this Point_Array); will work with values outside of this
-        range.
-
-        interpolate() returns false and leaves out unchanged if SkPoint array is not
-        the same size as ending SkPoint array. Call isInterpolatable() to check SkPath
-        compatibility prior to calling interpolate().
-
-        @param ending  SkPoint array averaged with this SkPoint array
-        @param weight  contribution of this SkPoint array, and
-                       one minus contribution of ending SkPoint array
-        @param out     SkPath replaced by interpolated averages
-        @return        true if SkPath contain same number of SkPoint
-
-        example: https://fiddle.skia.org/c/@Path_interpolate
-    */
-    bool interpolate(const SkPath& ending, SkScalar weight, SkPath* out) const;
-
     /** Sets SkPathFillType, the rule used to fill SkPath. While there is no
         check that ft is legal, values outside of SkPathFillType are not supported.
     */
@@ -1122,7 +1125,7 @@ public:
         @param radius  distance from arc to circle center
         @return        reference to SkPath
     */
-    SkPath& arcTo(const SkPoint p1, const SkPoint p2, SkScalar radius) {
+    SkPath& arcTo(SkPoint p1, SkPoint p2, SkScalar radius) {
         return this->arcTo(p1.fX, p1.fY, p2.fX, p2.fY, radius);
     }
 
@@ -1176,8 +1179,11 @@ public:
         @param xy           end of arc
         @return             reference to SkPath
     */
-    SkPath& arcTo(const SkPoint r, SkScalar xAxisRotate, ArcSize largeArc, SkPathDirection sweep,
-               const SkPoint xy) {
+    SkPath& arcTo(SkPoint r,
+                  SkScalar xAxisRotate,
+                  ArcSize largeArc,
+                  SkPathDirection sweep,
+                  const SkPoint xy) {
         return this->arcTo(r.fX, r.fY, xAxisRotate, largeArc, sweep, xy.fX, xy.fY);
     }
 
