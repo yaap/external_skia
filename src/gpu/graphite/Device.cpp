@@ -145,7 +145,7 @@ const SkStrokeRec& DefaultFillStyle() {
 /** If the paint can be reduced to a solid flood-fill, determine the correct color to fill with. */
 std::optional<SkColor4f> extract_paint_color(const PaintParams& paint,
                                              const SkColorInfo& dstColorInfo) {
-    std::optional<SkBlendMode> bm = paint.finalBlendMode();
+    SkBlendMode bm = paint.finalBlendMode();
     // Since we don't depend on the dst, a dst-out blend mode implies source is
     // opaque, which causes dst-out to behave like clear.
     if (bm == SkBlendMode::kClear || bm == SkBlendMode::kDstOut) {
@@ -330,21 +330,32 @@ bool use_compute_atlas_when_available(PathRendererStrategy strategy) {
            strategy == PathRendererStrategy::kDefault;
 }
 
-class AutoResetForDraw {
+class ScopedDrawBuilder {
 public:
-    explicit AutoResetForDraw(PipelineDataGatherer* gatherer) : fDataGatherer(gatherer) {}
-
-    ~AutoResetForDraw() {
-        if (fDataGatherer) {
-            fDataGatherer->resetForDraw();
-        }
+    explicit ScopedDrawBuilder(Recorder* recorder)
+            : fRecorder(recorder),
+              fKeyAndDataBuilder(fRecorder->priv().popOrCreateKeyAndDataBuilder()) {
+        SkASSERT(fKeyAndDataBuilder);
+        SkDEBUGCODE(this->gatherer()->checkReset());
+        SkDEBUGCODE(this->builder()->checkReset());
     }
 
-    AutoResetForDraw(const AutoResetForDraw&) = delete;
-    AutoResetForDraw& operator=(const AutoResetForDraw&) = delete;
+    ~ScopedDrawBuilder() {
+        SkASSERT(fKeyAndDataBuilder && fRecorder);
+        // The PipelineDataGatherer must be reset before being returned to the pool for reuse.
+        this->gatherer()->resetForDraw();
+        fRecorder->priv().pushKeyAndDataBuilder(std::move(fKeyAndDataBuilder));
+    }
+
+    PipelineDataGatherer* gatherer() { return &fKeyAndDataBuilder->first; }
+    PaintParamsKeyBuilder* builder() { return &fKeyAndDataBuilder->second; }
+
+    ScopedDrawBuilder(const ScopedDrawBuilder&) = delete;
+    ScopedDrawBuilder& operator=(const ScopedDrawBuilder&) = delete;
 
 private:
-    PipelineDataGatherer* fDataGatherer;
+    Recorder* fRecorder;
+    std::unique_ptr<KeyAndDataBuilder> fKeyAndDataBuilder;
 };
 
 } // anonymous namespace
@@ -507,12 +518,6 @@ Device::Device(Recorder* recorder, sk_sp<DrawContext> dc)
                     fRecorder->priv().caps()->defaultMSAASamplesCount());
         }
     }
-
-    const bool useStorageBuffers = fRecorder->priv().caps()->storageBufferSupport();
-    const auto& bindingReq = fRecorder->priv().caps()->resourceBindingRequirements();
-    fDataGatherer = std::make_unique<PipelineDataGatherer>(
-            useStorageBuffers ? bindingReq.fStorageBufferLayout : bindingReq.fUniformBufferLayout);
-    fKeyBuilder = std::make_unique<PaintParamsKeyBuilder>(fRecorder->priv().shaderCodeDictionary());
 }
 
 Device::~Device() {
@@ -1042,7 +1047,6 @@ void Device::drawRRect(const SkRRect& rr, const SkPaint& paint) {
 }
 
 void Device::drawDRRect(const SkRRect& outer, const SkRRect& inner, const SkPaint& paint) {
-#if !defined(SK_DISABLE_CLIP_DRAW_GEOMETRIC_INTERSECTION)
     // If there's a path effect or inverse fill, fall back to path rendering
     if (paint.getPathEffect() || paint.getStyle() != SkPaint::kFill_Style) {
         this->SkDevice::drawDRRect(outer, inner, paint);
@@ -1167,9 +1171,6 @@ void Device::drawDRRect(const SkRRect& outer, const SkRRect& inner, const SkPain
         this->drawRRect(outer, paint);
     }
     fClip.restore();
-#else
-    this->SkDevice::drawDRRect(outer, inner, paint);
-#endif
 }
 
 void Device::drawPath(const SkPath& path, const SkPaint& paint) {
@@ -1201,7 +1202,6 @@ void Device::drawPath(const SkPath& path, const SkPaint& paint) {
             this->drawRect(rect, paint);
             return;
         }
-#if !defined(SK_DISABLE_CLIP_DRAW_GEOMETRIC_INTERSECTION)
         // Detect filled nested rect contours
         SkRect rects[2];
         SkPathDirection dirs[2];
@@ -1217,7 +1217,6 @@ void Device::drawPath(const SkPath& path, const SkPaint& paint) {
                 return;
             }
         }
-#endif
     }
     this->drawGeometry(this->localToDeviceTransform(), Geometry(Shape(path)),
                        paint, SkStrokeRec(paint));
@@ -1450,7 +1449,7 @@ void Device::drawGeometry(const Transform& localToDevice,
                           sk_sp<SkBlender> primitiveBlender,
                           bool skipColorXform) {
     ASSERT_SINGLE_OWNER
-    AutoResetForDraw autoReset(fDataGatherer.get());
+    ScopedDrawBuilder scopedDrawBuilder(fRecorder);
     if (!localToDevice.valid()) {
         // If the transform is not invertible or not finite then drawing isn't well defined.
         SKGPU_LOG_W("Skipping draw with non-invertible/non-finite transform.");
@@ -1617,24 +1616,20 @@ void Device::drawGeometry(const Transform& localToDevice,
     KeyContext keyContext{fRecorder,
                           fDC.get(),
                           fRecorder->priv().refFloatStorageManager().get(),
-                          fKeyBuilder.get(),
-                          fDataGatherer.get(),
+                          scopedDrawBuilder.builder(),
+                          scopedDrawBuilder.gatherer(),
                           localToDevice.matrix(),
                           fDC->colorInfo(),
                           geometry.isShape() || geometry.isEdgeAAQuad()
                                 ? KeyGenFlags::kDefault
                                 : KeyGenFlags::kDisableSamplingOptimization,
                           paint.getColor4f()};
-    SkDEBUGCODE(fDataGatherer->checkReset());
-    SkDEBUGCODE(fKeyBuilder->checkReset());
-
     auto keyResult = shading.toKey(keyContext);
     if (!keyResult) {
         // Converting the SkPaint to a pipeline and set of uniform values + sampled textures failed.
         SKGPU_LOG_W("Key context creation failed in Device::drawGeometry, draw dropped!");
         return;
     }
-
     auto [paintID, dstUsage] = *keyResult;
 
     // If we are unclipped, do not depend on the dst, and cover the target, then we can adjust
@@ -1773,7 +1768,7 @@ void Device::drawGeometry(const Transform& localToDevice,
         SkASSERT(atlasMask.has_value());
         auto [mask, origin] = *atlasMask;
         fDC->recordDraw(renderer, Transform::Translate(origin.fX, origin.fY), Geometry(mask), clip,
-                        order, paintID, dstUsage, fDataGatherer.get(), nullptr);
+                        order, paintID, dstUsage, scopedDrawBuilder.gatherer(), nullptr);
     } else {
         if (styleType == SkStrokeRec::kStroke_Style ||
             styleType == SkStrokeRec::kHairline_Style ||
@@ -1785,7 +1780,7 @@ void Device::drawGeometry(const Transform& localToDevice,
                                    ? fRecorder->priv().rendererProvider()->tessellatedStrokes()
                                    : renderer,
                             localToDevice, geometry, clip, order, paintID, dstUsage,
-                            fDataGatherer.get(), &stroke);
+                            scopedDrawBuilder.gatherer(), &stroke);
         }
         if (styleType == SkStrokeRec::kFill_Style ||
             styleType == SkStrokeRec::kStrokeAndFill_Style) {
@@ -1804,13 +1799,13 @@ void Device::drawGeometry(const Transform& localToDevice,
                 orderWithoutCoverage.reverseDepthAsStencil();
                 fDC->recordDraw(fRecorder->priv().rendererProvider()->nonAABounds(), localToDevice,
                                 Geometry(Shape(innerFillBounds)), clip, orderWithoutCoverage,
-                                paintID, dstUsage, fDataGatherer.get(), nullptr);
+                                paintID, dstUsage, scopedDrawBuilder.gatherer(), nullptr);
                 // Force the coverage draw to come after the non-AA draw in order to benefit from
                 // early depth testing.
                 order.dependsOnPaintersOrder(orderWithoutCoverage.paintOrder());
             }
             fDC->recordDraw(renderer, localToDevice, geometry, clip, order, paintID, dstUsage,
-                            fDataGatherer.get(), nullptr);
+                            scopedDrawBuilder.gatherer(), nullptr);
         }
     }
 
@@ -1828,7 +1823,7 @@ void Device::drawClipShape(const Transform& localToDevice,
                            const Shape& shape,
                            const Clip& clip,
                            DrawOrder order) {
-    AutoResetForDraw autoReset(fDataGatherer.get());
+    ScopedDrawBuilder scopedDrawBuilder(fRecorder);
 
     // A clip draw's state is almost fully defined by the ClipStack. The only thing we need
     // to account for is selecting a Renderer and tracking the stencil buffer usage.
@@ -1861,12 +1856,12 @@ void Device::drawClipShape(const Transform& localToDevice,
     if (localToDevice.type() == Transform::Type::kPerspective) {
         SkPath devicePath = geometry.shape().asPath().makeTransform(localToDevice.matrix().asM33());
         fDC->recordDraw(renderer, Transform::Identity(), Geometry(Shape(devicePath)), clip, order,
-                        UniquePaintParamsID::Invalid(), DstUsage::kNone, fDataGatherer.get(),
-                        /*stroke=*/nullptr);
+                        UniquePaintParamsID::Invalid(), DstUsage::kNone,
+                        scopedDrawBuilder.gatherer(), /*stroke=*/nullptr);
     } else {
         fDC->recordDraw(renderer, localToDevice, geometry, clip, order,
-                        UniquePaintParamsID::Invalid(), DstUsage::kNone, fDataGatherer.get(),
-                        /*stroke=*/nullptr);
+                        UniquePaintParamsID::Invalid(), DstUsage::kNone,
+                        scopedDrawBuilder.gatherer(), /*stroke=*/nullptr);
     }
     // This ensures that draws recorded after this clip shape has been popped off the stack will
     // be unaffected by the Z value the clip shape wrote to the depth attachment.

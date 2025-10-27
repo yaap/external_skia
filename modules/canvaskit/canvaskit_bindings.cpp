@@ -1707,7 +1707,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
                       }),
                       allow_raw_pointers())
             .function("saveLayerPaint",
-                      optional_override([](SkCanvas& self, const SkPaint p) -> int {
+                      optional_override([](SkCanvas& self, const SkPaint& p) -> int {
                           return self.saveLayer(SkCanvas::SaveLayerRec(nullptr, &p, 0));
                       }))
             .function("scale", &SkCanvas::scale)
@@ -2353,7 +2353,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
             .function("_close", &ApplyClose)
             .function("_conicTo", &ApplyConicTo)
             .function("countPoints", &SkPath::countPoints)
-            .function("contains", &SkPath::contains)
+            .function("contains", select_overload<bool(float,float)const>(&SkPath::contains))
             .function("_cubicTo", &ApplyCubicTo)
             .function("_getPoint",
                       optional_override([](SkPath& self, int index, WASMPointerF32 oPtr) -> void {
