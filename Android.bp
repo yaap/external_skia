@@ -5405,6 +5405,7 @@ cc_defaults {
         "tests/graphite/MutableImagesTest.cpp",
         "tests/graphite/NotifyInUseTest.cpp",
         "tests/graphite/PersistentPipelineStorageTest.cpp",
+        "tests/graphite/PipelineCallbackTest.cpp",
         "tests/graphite/PipelineDataCacheTest.cpp",
         "tests/graphite/ProxyCacheTest.cpp",
         "tests/graphite/RTEffectTest.cpp",
