@@ -151,7 +151,7 @@ public:
 
     /** Sets SkPathBuilder to its initial state.
         Removes verb array, SkPoint array, and weights, and sets FillType to kWinding.
-        Internal storage associated with SkPathBuilder is released.
+        Internal storage associated with SkPathBuilder is preserved.
 
         @return  reference to SkPathBuilder
     */
@@ -1008,7 +1008,7 @@ private:
     SkPathBuilder& privateReverseAddPath(const SkPath&);
     SkPathBuilder& privateReversePathTo(const SkPath&);
 
-    std::tuple<SkPoint*, SkScalar*> growForVerbsInPath(const SkPathRef& path);
+    std::tuple<SkPoint*, SkScalar*> growForVerbsInPath(const SkPath& path);
 
     friend class SkPathPriv;
     friend class SkStroke;

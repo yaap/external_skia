@@ -68,7 +68,7 @@ var gniExportDescs = []exporter.GNIExportDesc{
 		{Var: "skia_codec_rust_png",
 			Rules: []string{
 				"//src/codec:rust_png_srcs",
-				"//rust/png:utils",
+				"//rust/common:span_utils",
 			},
 		},
 		{Var: "skia_codec_rust_png_ffi_rs_srcs",
@@ -137,7 +137,7 @@ var gniExportDescs = []exporter.GNIExportDesc{
 		{Var: "skia_encode_rust_png_srcs",
 			Rules: []string{
 				"//src/encode:rust_png_srcs",
-				"//rust/png:utils",
+				"//rust/common:span_utils",
 			}},
 		{Var: "skia_encode_png_base",
 			Rules: []string{
@@ -554,11 +554,7 @@ var gniExportDescs = []exporter.GNIExportDesc{
 			Rules: []string{
 				"//src/xps:core_hdrs",
 				"//src/xps:core_srcs",
-			}},
-		{Var: "skia_xps_libpng_public",
-			Rules: []string{"//include/docs:xps_libpng_hdrs"}},
-		{Var: "skia_xps_rust_png_public",
-			Rules: []string{"//include/docs:xps_rust_png_hdrs"}}},
+			}}},
 	},
 	{GNI: "gn/xml.gni", Vars: []exporter.GNIFileListExportDesc{
 		{Var: "skia_xml_sources",
@@ -636,7 +632,7 @@ var gniExportDescs = []exporter.GNIExportDesc{
 				"//include/gpu/vk:shared_public_hdrs",
 				"//include/gpu/ganesh/vk:public_hdrs",
 			}},
-		{Var: "skia_ganesh_vk_chromium_public",
+		{Var: "skia_gpu_vk_chromium_public",
 			Rules: []string{
 				"//include/private/chromium:vk_ganesh_hdrs",
 			}},
@@ -649,7 +645,7 @@ var gniExportDescs = []exporter.GNIExportDesc{
 			Rules: []string{
 				"//src/gpu/ganesh/vk:android_srcs",
 			}},
-		{Var: "skia_ganesh_vk_chromium_private",
+		{Var: "skia_gpu_vk_chromium_private",
 			Rules: []string{
 				"//src/gpu/ganesh/vk:vk_chromium_srcs",
 			}},
