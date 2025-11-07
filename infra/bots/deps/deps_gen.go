@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "8c5e129d48ad11e0fc4c4c2ebd3724cbb541069a",
+		Version: "eea1fcf95a58e1217012e344cc10750144600591",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -164,7 +164,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "516bf37a739dda9111d60a6cd4995166488fd319",
+		Version: "090cac3456950fe8a84e16c94355dab5f64cc9b6",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
@@ -259,7 +259,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
 		Id:      "swiftshader.googlesource.com/SwiftShader",
-		Version: "153470c12fdfc0293dafd58ae2f9f3eafd480bac",
+		Version: "1e0c6ee5dcffbf00a9ca0d9a1ed6e4029a9a2652",
 		Path:    "third_party/externals/swiftshader",
 	},
 }
