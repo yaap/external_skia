@@ -219,7 +219,7 @@ SkPathBuilder& SkPathBuilder::close() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-SkPathBuilder& SkPathBuilder::rMoveTo(SkPoint pt) {
+SkPathBuilder& SkPathBuilder::rMoveTo(SkVector pt) {
     SkPoint lastPt = {0,0}; // in case we're empty
     if (!fPts.empty()) {
         if (fVerbs.back() == SkPathVerb::kClose) {
@@ -231,24 +231,24 @@ SkPathBuilder& SkPathBuilder::rMoveTo(SkPoint pt) {
     return this->moveTo(lastPt + pt);
 }
 
-SkPathBuilder& SkPathBuilder::rLineTo(SkPoint p1) {
+SkPathBuilder& SkPathBuilder::rLineTo(SkVector p1) {
     this->ensureMove();
     return this->lineTo(fPts.back() + p1);
 }
 
-SkPathBuilder& SkPathBuilder::rQuadTo(SkPoint p1, SkPoint p2) {
+SkPathBuilder& SkPathBuilder::rQuadTo(SkVector p1, SkVector p2) {
     this->ensureMove();
     SkPoint base = fPts.back();
     return this->quadTo(base + p1, base + p2);
 }
 
-SkPathBuilder& SkPathBuilder::rConicTo(SkPoint p1, SkPoint p2, SkScalar w) {
+SkPathBuilder& SkPathBuilder::rConicTo(SkVector p1, SkVector p2, SkScalar w) {
     this->ensureMove();
     SkPoint base = fPts.back();
     return this->conicTo(base + p1, base + p2, w);
 }
 
-SkPathBuilder& SkPathBuilder::rCubicTo(SkPoint p1, SkPoint p2, SkPoint p3) {
+SkPathBuilder& SkPathBuilder::rCubicTo(SkVector p1, SkVector p2, SkVector p3) {
     this->ensureMove();
     SkPoint base = fPts.back();
     return this->cubicTo(base + p1, base + p2, base + p3);
@@ -257,11 +257,7 @@ SkPathBuilder& SkPathBuilder::rCubicTo(SkPoint p1, SkPoint p2, SkPoint p3) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 SkPath SkPathBuilder::detach(const SkMatrix* mx) {
-    auto path = this->make(sk_sp<SkPathRef>(new SkPathRef(std::move(fPts),
-                                                          std::move(fVerbs),
-                                                          std::move(fConicWeights),
-                                                          fSegmentMask,
-                                                          mx)));
+    auto path = this->snapshot(mx);
     this->reset();
     return path;
 }
@@ -448,7 +444,7 @@ SkPathBuilder& SkPathBuilder::arcTo(const SkRect& oval, SkScalar startAngle, SkS
 }
 
 SkPathBuilder& SkPathBuilder::rArcTo(SkPoint r, SkScalar xAxisRotate, ArcSize largeArc,
-                                     SkPathDirection sweep, SkPoint dxdy) {
+                                     SkPathDirection sweep, SkVector dxdy) {
     const SkPoint currentPoint = this->getLastPt().value_or(SkPoint{0, 0});
     return this->arcTo(r, xAxisRotate, largeArc, sweep, currentPoint + dxdy);
 }
@@ -700,13 +696,15 @@ SkPathBuilder& SkPathBuilder::addOval(const SkRect& oval, SkPathDirection dir, u
 SkPathBuilder& SkPathBuilder::addRRect(const SkRRect& rrect, SkPathDirection dir, unsigned index) {
     const SkRect& bounds = rrect.getBounds();
 
-    if (rrect.isRect() || rrect.isEmpty()) {
-        // degenerate(rect) => radii points are collapsing
-        return this->addRect(bounds, dir, (index + 1) / 2);
-    }
-    if (rrect.isOval()) {
-        // degenerate(oval) => line points are collapsing
-        return this->addOval(bounds, dir, index / 2);
+    auto [asType, newIndex] = SkPathPriv::SimplifyRRect(rrect, index);
+    switch (asType) {
+        case SkPathPriv::RRectAsEnum::kRect:
+            return this->addRect(bounds, dir, newIndex);
+        case SkPathPriv::RRectAsEnum::kOval:
+            return this->addOval(bounds, dir, newIndex);
+        case SkPathPriv::RRectAsEnum::kRRect:
+            // fall through ...
+            break;
     }
 
     const bool wasEmpty = (fSegmentMask == 0);
@@ -795,10 +793,10 @@ SkPathBuilder& SkPathBuilder::addPath(const SkPath& src, const SkMatrix& matrix,
         fLastMoveIndex = lastMoveToIndex + this->countPoints();
 
         auto [newPts, newWeights] = this->growForVerbsInPath(src);
-        const auto count = src.countPoints();
-        matrix.mapPoints({newPts, count}, {src.fPathRef->points(), count});
-        if (int numWeights = src.fPathRef->countWeights()) {
-            memcpy(newWeights, src.fPathRef->conicWeights(), numWeights * sizeof(newWeights[0]));
+        const size_t count = src.points().size();
+        matrix.mapPoints({newPts, count}, src.points());
+        if (auto conics = src.conicWeights(); !conics.empty()) {
+            memcpy(newWeights, conics.data(), conics.size_bytes());
         }
         return *this;
     }
