@@ -52,9 +52,7 @@ RandomScalerContext::RandomScalerContext(SkRandomTypeface& face,
                                          bool fakeIt)
         : SkScalerContext(face, effects, desc)
         , fProxy(getRandomTypeface()->proxy()->createScalerContext(SkScalerContextEffects(), desc))
-        , fFakeIt(fakeIt) {
-    fProxy->forceGenerateImageFromPath();
-}
+        , fFakeIt(fakeIt) {}
 
 SkScalerContext::GlyphMetrics RandomScalerContext::generateMetrics(const SkGlyph& origGlyph,
                                                                    SkArenaAlloc* alloc) {
@@ -208,7 +206,7 @@ void SkRandomTypeface::onGetFontDescriptor(SkFontDescriptor* desc, bool* isLocal
 }
 
 void SkRandomTypeface::onCharsToGlyphs(const SkUnichar* uni, int count, SkGlyphID glyphs[]) const {
-    fProxy->unicharsToGlyphs(uni, count, glyphs);
+    fProxy->unicharsToGlyphs({uni, count}, {glyphs, count});
 }
 
 int SkRandomTypeface::onCountGlyphs() const { return fProxy->countGlyphs(); }
@@ -247,7 +245,8 @@ int SkRandomTypeface::onGetVariationDesignParameters(SkFontParameters::Variation
 }
 
 int SkRandomTypeface::onGetTableTags(SkFontTableTag tags[]) const {
-    return fProxy->getTableTags(tags);
+    const size_t n = tags ? MAX_REASONABLE_TABLE_COUNT : 0;
+    return fProxy->readTableTags({tags, n});
 }
 
 size_t SkRandomTypeface::onGetTableData(SkFontTableTag tag,

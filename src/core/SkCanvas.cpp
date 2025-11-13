@@ -1661,6 +1661,10 @@ skgpu::graphite::Recorder* SkCanvas::recorder() const {
     return this->topDevice()->recorder();
 }
 
+SkRecorder* SkCanvas::baseRecorder() const {
+    return this->topDevice()->baseRecorder();
+}
+
 void SkCanvas::drawDRRect(const SkRRect& outer, const SkRRect& inner,
                           const SkPaint& paint) {
     TRACE_EVENT0("skia", TRACE_FUNC);
@@ -1726,9 +1730,11 @@ void SkCanvas::drawRRect(const SkRRect& rrect, const SkPaint& paint) {
     this->onDrawRRect(rrect, paint);
 }
 
-void SkCanvas::drawPoints(PointMode mode, size_t count, const SkPoint pts[], const SkPaint& paint) {
+void SkCanvas::drawPoints(PointMode mode, SkSpan<const SkPoint> pts, const SkPaint& paint) {
     TRACE_EVENT0("skia", TRACE_FUNC);
-    this->onDrawPoints(mode, count, pts, paint);
+    if (!pts.empty()) {
+        this->onDrawPoints(mode, pts.size(), pts.data(), paint);
+    }
 }
 
 void SkCanvas::drawVertices(const sk_sp<SkVertices>& vertices, SkBlendMode mode,
@@ -1858,7 +1864,7 @@ void SkCanvas::onDrawShadowRec(const SkPath& path, const SkDrawShadowRec& rec) {
     if (!this->predrawNotify()) {
         return;
     }
-    this->topDevice()->drawShadow(path, rec);
+    this->topDevice()->drawShadow(this, path, rec);
 }
 
 void SkCanvas::experimental_DrawEdgeAAQuad(const SkRect& rect, const SkPoint clip[4],
@@ -1878,7 +1884,7 @@ void SkCanvas::experimental_DrawEdgeAAImageSet(const ImageSetEntry imageSet[], i
     TRACE_EVENT0("skia", TRACE_FUNC);
     // Route single, rectangular quads to drawImageRect() to take advantage of image filter
     // optimizations that avoid a layer.
-    if (paint && paint->getImageFilter() && cnt == 1) {
+    if (paint && (paint->getImageFilter() || paint->getMaskFilter()) && cnt == 1) {
         const auto& entry = imageSet[0];
         // If the preViewMatrix is skipped or a positive-scale + translate matrix, we can apply it
         // to the entry's dstRect w/o changing output behavior.
@@ -1934,24 +1940,36 @@ void SkCanvas::onDrawPoints(PointMode mode, size_t count, const SkPoint pts[],
     }
     SkASSERT(pts != nullptr);
 
-    SkRect bounds;
-    // Compute bounds from points (common for drawing a single line)
-    if (count == 2) {
-        bounds.set(pts[0], pts[1]);
-    } else {
-        bounds.setBounds(pts, SkToInt(count));
-    }
-
     // Enforce paint style matches implicit behavior of drawPoints
     SkPaint strokePaint = paint;
     strokePaint.setStyle(SkPaint::kStroke_Style);
-    if (this->internalQuickReject(bounds, strokePaint)) {
-        return;
+
+    SkRect boundsStorage;
+    const SkRect* boundsPtr = nullptr;
+
+    /*
+     *  Computing the bounds can actually slow us down (since we check inside).
+     *  But if there is a filter, then it is useful to limit the size of
+     *  its offscreen, hence we only compute it in those cases.
+     *
+     *  Note: it would be "correct" to never compute this, it is just considered
+     *        an optimization opportunity.
+     */
+    if (paint.getImageFilter() || paint.getMaskFilter()) {
+        if (count == 2) {
+            boundsStorage.set(pts[0], pts[1]);
+        } else {
+            boundsStorage.setBounds(pts, SkToInt(count));
+        }
+        if (this->internalQuickReject(boundsStorage, strokePaint)) {
+            return;
+        }
+        boundsPtr = &boundsStorage;
     }
 
-    auto layer = this->aboutToDraw(strokePaint, &bounds);
+    auto layer = this->aboutToDraw(strokePaint, boundsPtr);
     if (layer) {
-        this->topDevice()->drawPoints(mode, count, pts, layer->paint());
+        this->topDevice()->drawPoints(mode, {pts, count}, layer->paint());
     }
 }
 
@@ -2324,8 +2342,6 @@ void SkCanvas::onDrawImageRect2(const SkImage* image, const SkRect& src, const S
         return;
     }
 
-    // When there's a alpha-only image that must be colorized or a mask filter to apply, go through
-    // the regular auto-layer-for-imagefilter process
     if (realPaint.getMaskFilter() && this->topDevice()->useDrawCoverageMaskForMaskFilters()) {
         // Route mask-filtered drawImages to drawRect() to use the auto-layer for mask filters,
         // which require all shading to be encoded in the paint.
@@ -2470,17 +2486,17 @@ void SkCanvas::drawSimpleText(const void* text, size_t byteLength, SkTextEncodin
     }
 }
 
-void SkCanvas::drawGlyphs(int count, const SkGlyphID* glyphs, const SkPoint* positions,
-                          const uint32_t* clusters, int textByteCount, const char* utf8text,
+void SkCanvas::drawGlyphs(SkSpan<const SkGlyphID> glyphs, SkSpan<const SkPoint> positions,
+                          SkSpan<const uint32_t> clusters, SkSpan<const char> utf8text,
                           SkPoint origin, const SkFont& font, const SkPaint& paint) {
-    if (count <= 0) { return; }
+    if (glyphs.empty()) { return; }
 
     sktext::GlyphRun glyphRun {
             font,
-            SkSpan(positions, count),
-            SkSpan(glyphs, count),
-            SkSpan(utf8text, textByteCount),
-            SkSpan(clusters, count),
+            positions,
+            glyphs,
+            utf8text,
+            clusters,
             SkSpan<SkVector>()
     };
 
@@ -2489,14 +2505,14 @@ void SkCanvas::drawGlyphs(int count, const SkGlyphID* glyphs, const SkPoint* pos
     this->onDrawGlyphRunList(glyphRunList, paint);
 }
 
-void SkCanvas::drawGlyphs(int count, const SkGlyphID glyphs[], const SkPoint positions[],
+void SkCanvas::drawGlyphs(SkSpan<const SkGlyphID> glyphs, SkSpan<const SkPoint> positions,
                           SkPoint origin, const SkFont& font, const SkPaint& paint) {
-    if (count <= 0) { return; }
+    if (glyphs.empty()) { return; }
 
     sktext::GlyphRun glyphRun {
         font,
-        SkSpan(positions, count),
-        SkSpan(glyphs, count),
+        positions,
+        glyphs,
         SkSpan<const char>(),
         SkSpan<const uint32_t>(),
         SkSpan<SkVector>()
@@ -2507,17 +2523,17 @@ void SkCanvas::drawGlyphs(int count, const SkGlyphID glyphs[], const SkPoint pos
     this->onDrawGlyphRunList(glyphRunList, paint);
 }
 
-void SkCanvas::drawGlyphs(int count, const SkGlyphID glyphs[], const SkRSXform xforms[],
-                          SkPoint origin, const SkFont& font, const SkPaint& paint) {
-    if (count <= 0) { return; }
+void SkCanvas::drawGlyphsRSXform(SkSpan<const SkGlyphID> glyphs, SkSpan<const SkRSXform> xforms,
+                                 SkPoint origin, const SkFont& font, const SkPaint& paint) {
+    if (glyphs.empty()) { return; }
 
     auto [positions, rotateScales] =
-            fScratchGlyphRunBuilder->convertRSXForm(SkSpan(xforms, count));
+            fScratchGlyphRunBuilder->convertRSXForm(xforms);
 
     sktext::GlyphRun glyphRun {
             font,
             positions,
-            SkSpan(glyphs, count),
+            glyphs,
             SkSpan<const char>(),
             SkSpan<const uint32_t>(),
             rotateScales
@@ -2697,7 +2713,7 @@ void SkCanvas::onDrawEdgeAAImageSet2(const ImageSetEntry imageSet[], int count,
     // individual entries and Chromium's occlusion culling already makes it likely that at least one
     // entry will be visible. So, we only calculate the draw bounds when it's trivial (count == 1),
     // or we need it for the autolooper (since it greatly improves image filter perf).
-    bool needsAutoLayer = SkToBool(realPaint.getImageFilter());
+    bool needsAutoLayer = SkToBool(realPaint.getImageFilter() || realPaint.getMaskFilter());
     bool setBoundsValid = count == 1 || needsAutoLayer;
     SkRect setBounds = imageSet[0].fDstRect;
     if (imageSet[0].fMatrixIndex >= 0) {
@@ -2716,6 +2732,46 @@ void SkCanvas::onDrawEdgeAAImageSet2(const ImageSetEntry imageSet[], int count,
 
     // If we happen to have the draw bounds, though, might as well check quickReject().
     if (setBoundsValid && this->internalQuickReject(setBounds, realPaint)) {
+        return;
+    }
+
+    if (realPaint.getMaskFilter() && this->topDevice()->useDrawCoverageMaskForMaskFilters()) {
+        // Route mask-filtered drawEdgeAAImageSets to drawEdgeAAQuad() or drawImageRect()
+        // to use the auto-layer for mask filters, which require all shading to be encoded in
+        // the paint.
+        int dstClipIndex = 0;
+        for (int i = 0; i < count; ++i) {
+            SkPaint imagePaint = realPaint;
+            SkRect drawDst = SkModifyPaintAndDstForDrawImageRect(
+                                imageSet[i].fImage.get(), sampling,
+                                imageSet[i].fSrcRect, imageSet[i].fDstRect,
+                                constraint == kStrict_SrcRectConstraint, &imagePaint);
+            if (drawDst.isEmpty()) {
+                return;
+            }
+
+            auto layer = this->aboutToDraw(imagePaint, &drawDst);
+            if (layer) {
+                // Since we can't call mapRect to apply any preview matrix and drawEdgeAAQuad
+                // doesn't take an optional matrix, we can modify the local-to-device matrix
+                // of the layers top device.
+                if (imageSet[i].fMatrixIndex >= 0) {
+                    this->topDevice()->setLocalToDevice(
+                        this->topDevice()->localToDevice44() *
+                        SkM44(preViewMatrices[imageSet[i].fMatrixIndex]));
+                }
+
+                // Call drawEdgeAAImageSet on each image one at a time, to correctly
+                // paint the image.
+                this->topDevice()->drawEdgeAAQuad(drawDst,
+                                                  imageSet[i].fHasClip ? dstClips + dstClipIndex
+                                                                        : nullptr,
+                                                  (QuadAAFlags)imageSet[i].fAAFlags,
+                                                  layer->paint().getColor4f(),
+                                                  SkBlendMode::kSrcOver);
+            }
+            dstClipIndex += 4 * imageSet[i].fHasClip;
+        }
         return;
     }
 
@@ -2739,15 +2795,15 @@ void SkCanvas::drawColor(const SkColor4f& c, SkBlendMode mode) {
 }
 
 void SkCanvas::drawPoint(SkScalar x, SkScalar y, const SkPaint& paint) {
-    const SkPoint pt = { x, y };
-    this->drawPoints(kPoints_PointMode, 1, &pt, paint);
+    const SkPoint pt[1] = {{ x, y }};
+    this->drawPoints(kPoints_PointMode, pt, paint);
 }
 
 void SkCanvas::drawLine(SkScalar x0, SkScalar y0, SkScalar x1, SkScalar y1, const SkPaint& paint) {
     SkPoint pts[2];
     pts[0].set(x0, y0);
     pts[1].set(x1, y1);
-    this->drawPoints(kLines_PointMode, 2, pts, paint);
+    this->drawPoints(kLines_PointMode, pts, paint);
 }
 
 void SkCanvas::drawCircle(SkScalar cx, SkScalar cy, SkScalar radius, const SkPaint& paint) {

@@ -22,9 +22,9 @@
   #define GR_GL_CHECK_ALLOC_WITH_GET_ERROR 0
 
   // Staging flags
-  #define SK_USE_LEGACY_BLUR_GANESH
 
   #define SK_SUPPORT_LEGACY_EMBOSSMASKFILTER
+  #define SK_SUPPORT_UNSPANNED_APIS
 
   // Logging settings
   #define SKGPU_GRAPHITE_LOWEST_ACTIVE_LOG_PRIORITY skgpu::graphite::LogPriority::kWarning

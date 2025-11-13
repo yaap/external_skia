@@ -247,7 +247,6 @@ public:
                         const SkDescriptor* desc)
             : SkScalerContext(face, effects, desc) {
         fRec.getSingleMatrix(&fMatrix);
-        this->forceGenerateImageFromPath();
     }
 
     const SkUserTypeface* userTF() const {
@@ -266,7 +265,7 @@ protected:
         }
 
         const auto& rec = tf->fGlyphRecs[gid];
-        mx.advance = fMatrix.mapXY(rec.fAdvance, 0);
+        mx.advance = fMatrix.mapPoint({rec.fAdvance, 0});
 
         if (rec.isDrawable()) {
             mx.maskFormat = SkMask::kARGB32_Format;
@@ -278,13 +277,18 @@ protected:
 
             // These do not have an outline path.
             mx.neverRequestPath = true;
+        } else {
+            mx.computeFromPath = true;
         }
         return mx;
     }
 
     void generateImage(const SkGlyph& glyph, void* imageBuffer) override {
         const auto& rec = this->userTF()->fGlyphRecs[glyph.getGlyphID()];
-        SkASSERTF(rec.isDrawable(), "Only drawable-backed glyphs should reach generateImage.");
+        if (!rec.isDrawable()) {
+            this->generateImageFromPath(glyph, imageBuffer);
+            return;
+        }
 
         auto canvas = SkCanvas::MakeRasterDirectN32(glyph.width(), glyph.height(),
                                                     static_cast<SkPMColor*>(imageBuffer),
@@ -349,7 +353,7 @@ protected:
     }
 
     void generateFontMetrics(SkFontMetrics* metrics) override {
-        auto [sx, sy] = fMatrix.mapXY(1, 1);
+        auto [sx, sy] = fMatrix.mapPoint({1, 1});
         *metrics = scale_fontmetrics(this->userTF()->fMetrics, sx, sy);
     }
 

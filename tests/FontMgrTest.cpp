@@ -47,12 +47,11 @@ DEF_TEST(FontMgr_Font, reporter) {
     sk_bzero(glyphs, sizeof(glyphs));
 
     // Check that no glyphs are copied with insufficient storage.
-    int count = font.textToGlyphs("Hello", 5, SkTextEncoding::kUTF8, glyphs, 2);
+    int count = font.textToGlyphs("Hello", 5, SkTextEncoding::kUTF8, {glyphs, 2});
     REPORTER_ASSERT(reporter, 5 == count);
     for (const auto glyph : glyphs) { REPORTER_ASSERT(reporter, glyph == 0); }
 
-    SkAssertResult(font.textToGlyphs("Hello", 5, SkTextEncoding::kUTF8, glyphs,
-                                     std::size(glyphs)) == count);
+    SkAssertResult(font.textToGlyphs("Hello", 5, SkTextEncoding::kUTF8, glyphs) == count);
 
     for (int i = 0; i < count; ++i) {
         REPORTER_ASSERT(reporter, 0 != glyphs[i]);
@@ -141,7 +140,11 @@ DEF_TEST(FontMgr_Iter, reporter) {
 
             sk_sp<SkTypeface> face2(fm->matchFamilyStyle(name1.c_str(), s1));
             if (!face2) {
-                REPORTER_ASSERT(reporter, face2.get());
+                // The Ubunutu 18.04 test machines have Noto Emoji but it cannot be found by name.
+                if (name1.equals("Noto Emoji")) {
+                    continue;
+                }
+                REPORTER_ASSERT(reporter, face2.get(), "Could not find %s", name1.c_str());
                 continue;
             }
             SkString name2;

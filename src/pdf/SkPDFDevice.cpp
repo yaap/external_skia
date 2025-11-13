@@ -98,6 +98,7 @@ SkPDFDevice::MarkedContentManager::MarkedContentManager(SkPDFDocument* document,
     , fOut(out)
     , fCurrentlyActiveMark()
     , fNextMarksElemId(0)
+    , fCurrentMarksElemId(0)
     , fMadeMarks(false)
 {}
 
@@ -112,13 +113,14 @@ void SkPDFDevice::MarkedContentManager::setNextMarksElemId(int nextMarksElemId) 
 int SkPDFDevice::MarkedContentManager::elemId() const { return fNextMarksElemId; }
 
 void SkPDFDevice::MarkedContentManager::beginMark() {
-    if (fNextMarksElemId == fCurrentlyActiveMark.elemId()) {
+    if (fNextMarksElemId == fCurrentMarksElemId) {
         return;
     }
-    if (fCurrentlyActiveMark) {
+    if (fCurrentMarksElemId) {
         // End this mark
         fOut->writeText("EMC\n");
         fCurrentlyActiveMark = SkPDFStructTree::Mark();
+        fCurrentMarksElemId = 0;
     }
     if (fNextMarksElemId) {
         fCurrentlyActiveMark = fDoc->createMarkForElemId(fNextMarksElemId);
@@ -128,7 +130,37 @@ void SkPDFDevice::MarkedContentManager::beginMark() {
             fOut->writeText(" <</MCID ");
             fOut->writeDecAsText(fCurrentlyActiveMark.mcid());
             fOut->writeText(" >>BDC\n");
+            fCurrentMarksElemId = fCurrentlyActiveMark.elemId();
             fMadeMarks = true;
+        } else if (SkPDF::NodeID::BackgroundArtifact <= fNextMarksElemId &&
+                   fNextMarksElemId <= SkPDF::NodeID::OtherArtifact &&
+                   fDoc->hasCurrentPage())
+        {
+            fOut->writeText("/Artifact");
+            if (fNextMarksElemId == SkPDF::NodeID::OtherArtifact) {
+                fOut->writeText(" BMC\n");
+            } else if (fNextMarksElemId == SkPDF::NodeID::PaginationArtifact ||
+                       fNextMarksElemId == SkPDF::NodeID::PaginationHeaderArtifact ||
+                       fNextMarksElemId == SkPDF::NodeID::PaginationFooterArtifact ||
+                       fNextMarksElemId == SkPDF::NodeID::PaginationWatermarkArtifact)
+            {
+                fOut->writeText(" <</Type /Pagination");
+                if (fNextMarksElemId == SkPDF::NodeID::PaginationHeaderArtifact) {
+                    fOut->writeText(" /Subtype /Header");
+                } else if  (fNextMarksElemId == SkPDF::NodeID::PaginationFooterArtifact) {
+                    fOut->writeText(" /Subtype /Footer");
+                } else if (fNextMarksElemId == SkPDF::NodeID::PaginationWatermarkArtifact) {
+                    fOut->writeText(" /Subtype /Watermark");
+                }
+                fOut->writeText(" >>BDC\n");
+            } else if (fNextMarksElemId == SkPDF::NodeID::LayoutArtifact) {
+                fOut->writeText(" <</Type /Layout >>BDC\n");
+            } else if (fNextMarksElemId == SkPDF::NodeID::PageArtifact) {
+                fOut->writeText(" <</Type /Page >>BDC\n");
+            } else if (fNextMarksElemId == SkPDF::NodeID::BackgroundArtifact) {
+                fOut->writeText(" <</Type /Background >>BDC\n");
+            }
+            fCurrentMarksElemId = fNextMarksElemId;
         }
     }
 }
@@ -191,8 +223,7 @@ static int add_resource(THashSet<SkPDFIndirectReference>& resources, SkPDFIndire
 }
 
 static void draw_points(SkCanvas::PointMode mode,
-                        size_t count,
-                        const SkPoint* points,
+                        SkSpan<const SkPoint> points,
                         const SkPaint& paint,
                         const SkIRect& bounds,
                         SkDevice* device) {
@@ -201,7 +232,7 @@ static void draw_points(SkCanvas::PointMode mode,
     draw.fDst = SkPixmap(SkImageInfo::MakeUnknown(bounds.right(), bounds.bottom()), nullptr, 0);
     draw.fCTM = &device->localToDevice();
     draw.fRC = &rc;
-    draw.drawPoints(mode, count, points, paint, device);
+    draw.drawPoints(mode, points, paint, device);
 }
 
 static void transform_shader(SkPaint* paint, const SkMatrix& ctm) {
@@ -395,7 +426,7 @@ void SkPDFDevice::drawAnnotation(const SkRect& rect, const char key[], SkData* v
             return;
         }
         if (!strcmp(SkAnnotationKeys::Define_Named_Dest_Key(), key)) {
-            SkPoint p = this->localToDevice().mapXY(rect.x(), rect.y());
+            SkPoint p = this->localToDevice().mapPoint({rect.x(), rect.y()});
             pageXform.mapPoints(&p, 1);
             auto pg = fDocument->currentPage();
             fDocument->fNamedDestinations.push_back(SkPDFNamedDestination{sk_ref_sp(value), p, pg});
@@ -444,13 +475,12 @@ void SkPDFDevice::drawPaint(const SkPaint& srcPaint) {
 }
 
 void SkPDFDevice::drawPoints(SkCanvas::PointMode mode,
-                             size_t count,
-                             const SkPoint* points,
+                             SkSpan<const SkPoint> points,
                              const SkPaint& srcPaint) {
     if (this->hasEmptyClip()) {
         return;
     }
-    if (count == 0) {
+    if (points.size() == 0) {
         return;
     }
     SkTCopyOnFirstWrite<SkPaint> paint(clean_paint(srcPaint));
@@ -465,7 +495,7 @@ void SkPDFDevice::drawPoints(SkCanvas::PointMode mode,
     // We only use this when there's a path effect or perspective because of the overhead
     // of multiple calls to setUpContentEntry it causes.
     if (paint->getPathEffect() || this->localToDevice().hasPerspective()) {
-        draw_points(mode, count, points, *paint, this->devClipBounds(), this);
+        draw_points(mode, points, *paint, this->devClipBounds(), this);
         return;
     }
 
@@ -477,8 +507,8 @@ void SkPDFDevice::drawPoints(SkCanvas::PointMode mode,
             set_style(&paint, SkPaint::kFill_Style);
             SkScalar strokeWidth = paint->getStrokeWidth();
             SkScalar halfStroke = SkScalarHalf(strokeWidth);
-            for (size_t i = 0; i < count; i++) {
-                SkRect r = SkRect::MakeXYWH(points[i].fX, points[i].fY, 0, 0);
+            for (auto&& pt : points) {
+                SkRect r = SkRect::MakeXYWH(pt.fX, pt.fY, 0, 0);
                 r.inset(-halfStroke, -halfStroke);
                 this->drawRect(r, *paint);
             }
@@ -503,10 +533,11 @@ void SkPDFDevice::drawPoints(SkCanvas::PointMode mode,
         // The points do not already have localToDevice applied.
         pageXform.preConcat(this->localToDevice());
 
-        for (auto&& userPoint : SkSpan(points, count)) {
+        for (auto&& userPoint : points) {
             fMarkManager.accumulate(pageXform.mapPoint(userPoint));
         }
     }
+    const size_t count = points.size();
     switch (mode) {
         case SkCanvas::kPolygon_PointMode:
             SkPDFUtils::MoveTo(points[0].fX, points[0].fY, contentStream);
@@ -835,7 +866,7 @@ void SkPDFDevice::drawGlyphRunAsPath(
         const SkPoint* fPos;
     } rec = {&path, offset, glyphRun.positions().data()};
 
-    font.getPaths(glyphRun.glyphsIDs().data(), glyphRun.glyphsIDs().size(),
+    font.getPaths(glyphRun.glyphsIDs(),
                   [](const SkPath* path, const SkMatrix& mx, void* ctx) {
                       Rec* rec = reinterpret_cast<Rec*>(ctx);
                       if (path) {
@@ -1859,13 +1890,4 @@ void SkPDFDevice::drawSpecial(SkSpecialImage* srcImg, const SkMatrix& localToDev
         this->internalDrawImageRect(SkKeyedImage(resultBM), nullptr, r, sampling, paint,
                                     localToDevice);
     }
-}
-
-sk_sp<SkSpecialImage> SkPDFDevice::makeSpecial(const SkBitmap& bitmap) {
-    return SkSpecialImages::MakeFromRaster(bitmap.bounds(), bitmap, this->surfaceProps());
-}
-
-sk_sp<SkSpecialImage> SkPDFDevice::makeSpecial(const SkImage* image) {
-    return SkSpecialImages::MakeFromRaster(
-            image->bounds(), image->makeNonTextureImage(), this->surfaceProps());
 }

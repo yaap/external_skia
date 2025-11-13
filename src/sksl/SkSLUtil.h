@@ -153,6 +153,9 @@ struct ShaderCaps {
     // array function parameter, so fForceStd430ArrayLayout will make all array strides conform
     // to std430 stride alignment rules.
     bool fForceStd430ArrayLayout = false;
+    // Clamp, Min, Max, intrinsics all appear to be broken on Intel UHD630, so shaders for these
+    // devices will break these intrinsics into individual scalar commands.
+    bool fVectorClampMinMaxSupport = true;
 
     const char* fVersionDeclString = "";
 
@@ -168,7 +171,7 @@ struct ShaderCaps {
 class ShaderCapsFactory {
 public:
     static const ShaderCaps* Default() {
-        static const SkSL::ShaderCaps* sCaps = [] {
+        static const SkSL::ShaderCaps* const sCaps = [] {
             std::unique_ptr<ShaderCaps> caps = MakeShaderCaps();
             caps->fVersionDeclString = "#version 400";
             caps->fShaderDerivativeSupport = true;
@@ -178,7 +181,7 @@ public:
     }
 
     static const ShaderCaps* Standalone() {
-        static const SkSL::ShaderCaps* sCaps = MakeShaderCaps().release();
+        static const SkSL::ShaderCaps* const sCaps = MakeShaderCaps().release();
         return sCaps;
     }
 
