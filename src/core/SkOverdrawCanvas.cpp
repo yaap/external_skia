@@ -23,6 +23,7 @@
 #include "include/private/base/SkTDArray.h"
 #include "src/base/SkZip.h"
 #include "src/core/SkDevice.h"
+#include "src/core/SkDraw.h"
 #include "src/core/SkDrawShadowInfo.h"
 #include "src/core/SkGlyph.h"
 #include "src/core/SkGlyphRunPainter.h"
@@ -58,7 +59,7 @@ SkOverdrawCanvas::SkOverdrawCanvas(SkCanvas* canvas)
 }
 
 namespace {
-class TextDevice : public SkNoPixelsDevice, public SkGlyphRunListPainterCPU::BitmapDevicePainter {
+class TextDevice : public SkNoPixelsDevice, public skcpu::BitmapDevicePainter {
 public:
     TextDevice(SkCanvas* overdrawCanvas, const SkSurfaceProps& props)
             : SkNoPixelsDevice{SkIRect::MakeWH(32767, 32767), props},
@@ -69,7 +70,7 @@ public:
         for (auto [glyph, pos] : accepted) {
             SkMask mask = glyph->mask(pos);
             // We need to ignore any matrix on the overdraw canvas (it's already been baked into
-            // our glyph positions). Otherwise, the CTM is double-applied. (skbug.com/13732)
+            // our glyph positions). Otherwise, the CTM is double-applied. (skbug.com/40044818)
             fOverdrawCanvas->save();
             fOverdrawCanvas->resetMatrix();
             fOverdrawCanvas->drawRect(SkRect::Make(mask.fBounds), SkPaint());
@@ -90,7 +91,7 @@ public:
 
 private:
     SkCanvas* const fOverdrawCanvas;
-    SkGlyphRunListPainterCPU fPainter;
+    skcpu::GlyphRunListPainter fPainter;
 };
 }  // namespace
 

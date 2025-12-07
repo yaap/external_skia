@@ -32,6 +32,7 @@
 #include "src/sksl/analysis/SkSLProgramVisitor.h"
 #include "src/sksl/codegen/SkSLCodeGenTypes.h"
 #include "src/sksl/codegen/SkSLCodeGenerator.h"
+#include "src/sksl/codegen/SkSLNativeShader.h"
 #include "src/sksl/ir/SkSLBinaryExpression.h"
 #include "src/sksl/ir/SkSLBlock.h"
 #include "src/sksl/ir/SkSLConstructor.h"
@@ -354,7 +355,7 @@ protected:
 
     // If we might use an index expression more than once, we need to capture the result in a
     // temporary variable to avoid double-evaluation. This should generally only occur when emitting
-    // a function call, since we need to polyfill GLSL-style out-parameter support. (skia:14130)
+    // a function call, since we need to polyfill GLSL-style out-parameter support. (skbug.com/40045204)
     // The map holds <index-expression, temp-variable name>.
     using IndexSubstitutionMap = skia_private::THashMap<const Expression*, std::string>;
 
@@ -883,7 +884,7 @@ void MetalCodeGenerator::writeScalarizedIntrinsicCall(const FunctionCall& c){
     const Expression& primaryArg = *arguments[0];
     int columns = primaryArg.type().columns();
 
-    static constexpr const char* kSwizzleChars = "xyzw";
+    static constexpr std::array<const char*, 4> kSwizzleChars = { "x", "y", "z", "w" };
     this->writeWithIndexSubstitution([&]() {
         this->writeType(primaryArg.type());
         this->write("(");
@@ -898,7 +899,7 @@ void MetalCodeGenerator::writeScalarizedIntrinsicCall(const FunctionCall& c){
                 } else {
                     this->writeIndexInnerExpression(*arguments[j]);
                     this->write(".");
-                    this->write(&kSwizzleChars[i]);
+                    this->write(kSwizzleChars[i]);
                 }
             }
             this->write(")");
@@ -3721,12 +3722,12 @@ bool ToMetal(Program& program, const ShaderCaps* caps, OutputStream& out) {
     return ToMetal(program, caps, out, defaultPrintOpts);
 }
 
-bool ToMetal(Program& program, const ShaderCaps* caps, std::string* out) {
+bool ToMetal(Program& program, const ShaderCaps* caps, NativeShader* out) {
     StringStream buffer;
     if (!ToMetal(program, caps, buffer)) {
         return false;
     }
-    *out = buffer.str();
+    out->fText = buffer.str();
     return true;
 }
 

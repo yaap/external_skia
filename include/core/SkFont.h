@@ -8,7 +8,8 @@
 #ifndef SkFont_DEFINED
 #define SkFont_DEFINED
 
-#include "include/core/SkPoint.h"
+#include "include/core/SkPath.h"  // IWYU pragma: keep (for SK_HIDE_PATH_EDIT_METHODS)
+#include "include/core/SkPoint.h" // IWYU pragma: keep (for unspanned apis)
 #include "include/core/SkRect.h"
 #include "include/core/SkRefCnt.h"
 #include "include/core/SkScalar.h"
@@ -20,14 +21,16 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 class SkMatrix;
 class SkPaint;
-class SkPath;
 enum class SkFontHinting;
 enum class SkTextEncoding;
 struct SkFontMetrics;
+
+namespace skcpu { class GlyphRunListPainter; }
 
 /** \class SkFont
     SkFont controls options applied when drawing and measuring text.
@@ -48,10 +51,10 @@ public:
     */
     SkFont();
 
-    /** Constructs SkFont with default values with SkTypeface and size in points.
+    /** Constructs SkFont with default values with SkTypeface and size.
 
         @param typeface  font and style used to draw and measure text
-        @param size      typographic height of text
+        @param size      EM size in local coordinate units
         @return          initialized SkFont
     */
     SkFont(sk_sp<SkTypeface> typeface, SkScalar size);
@@ -69,7 +72,7 @@ public:
         and expanded fonts. Horizontal skew emulates oblique fonts.
 
         @param typeface  font and style used to draw and measure text
-        @param size      typographic height of text
+        @param size      EM size in local coordinate units
         @param scaleX    text horizontal scale
         @param skewX     additional shear on x-axis relative to y-axis
         @return          initialized SkFont
@@ -196,7 +199,7 @@ public:
     /** Returns a font with the same attributes of this font, but with the specified size.
         Returns nullptr if size is less than zero, infinite, or NaN.
 
-        @param size  typographic height of text
+        @param size  EM size in local coordinate units
         @return      initialized SkFont
      */
     SkFont makeWithSize(SkScalar size) const;
@@ -210,9 +213,10 @@ public:
         return fTypeface.get();
     }
 
-    /** Returns text size in points.
+    /** Return EM size in local coordinate units.
+        See https://skia.org/docs/user/coordinates/#local-coordinates .
 
-        @return  typographic height of text
+        @return  EM size in local coordinate units
     */
     SkScalar    getSize() const { return fSize; }
 
@@ -247,10 +251,11 @@ public:
     */
     void setTypeface(sk_sp<SkTypeface> tf);
 
-    /** Sets text size in points.
+    /** Sets the EM size in local coordinate units.
+        See https://skia.org/docs/user/coordinates/#local-coordinates .
         Has no effect if textSize is not greater than or equal to zero.
 
-        @param textSize  typographic height of text
+        @param textSize  EM size in local coordinate units
     */
     void setSize(SkScalar textSize);
 
@@ -295,8 +300,8 @@ public:
         @param glyphs        storage for glyph indices; may be empty
         @return number of glyphs represented by text of length byteLength
     */
-    int textToGlyphs(const void* text, size_t byteLength, SkTextEncoding encoding,
-                     SkSpan<SkGlyphID> glyphs) const;
+    size_t textToGlyphs(const void* text, size_t byteLength, SkTextEncoding encoding,
+                        SkSpan<SkGlyphID> glyphs) const;
 
     /** Returns glyph index for Unicode character.
 
@@ -319,7 +324,7 @@ public:
         @param byteLength    length of character storage in bytes
         @return              number of glyphs represented by text of length byteLength
     */
-    int countText(const void* text, size_t byteLength, SkTextEncoding encoding) const {
+    size_t countText(const void* text, size_t byteLength, SkTextEncoding encoding) const {
         return this->textToGlyphs(text, byteLength, encoding, {});
     }
 
@@ -428,16 +433,18 @@ public:
                                         SkScalar top, SkScalar bottom,
                                         const SkPaint* = nullptr) const;
 
-    /** Modifies path to be the outline of the glyph.
-        If the glyph has an outline, modifies path to be the glyph's outline and returns true.
-        The glyph outline may be empty. Degenerate contours in the glyph outline will be skipped.
-        If glyph is described by a bitmap, returns false and ignores path parameter.
-
-        @param glyphID  index of glyph
-        @param path     pointer to existing SkPath
-        @return         true if glyphID is described by path
+    /*
+     * If the specified glyph can be represented as a path, return its path.
+     * If it is not (e.g. it is represented with a bitmap) return {}.
+     *
+     * Note: an 'empty' glyph (e.g. what a space " " character might map to) can return
+     * a path, but that path may have zero contours.
      */
+    std::optional<SkPath> getPath(SkGlyphID glyphID) const;
+
+#ifndef SK_HIDE_PATH_EDIT_METHODS
     bool getPath(SkGlyphID glyphID, SkPath* path) const;
+#endif
 
     /** Returns path corresponding to glyph array.
 
@@ -482,7 +489,7 @@ public:
 #ifdef SK_SUPPORT_UNSPANNED_APIS
     int textToGlyphs(const void* text, size_t byteLength, SkTextEncoding encoding,
                      SkGlyphID glyphs[], int maxGlyphCount) const {
-        return this->textToGlyphs(text, byteLength, encoding, {glyphs, maxGlyphCount});
+        return (int)this->textToGlyphs(text, byteLength, encoding, {glyphs, maxGlyphCount});
     }
     void unicharsToGlyphs(const SkUnichar uni[], int count, SkGlyphID glyphs[]) const {
         this->unicharsToGlyphs({uni, count}, {glyphs, count});
@@ -560,7 +567,7 @@ private:
     bool hasSomeAntiAliasing() const;
 
     friend class SkFontPriv;
-    friend class SkGlyphRunListPainterCPU;
+    friend class skcpu::GlyphRunListPainter;
     friend class SkStrikeSpec;
     friend class SkRemoteGlyphCacheTest;
 };

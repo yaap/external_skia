@@ -5,12 +5,11 @@
 
 from . import util
 
-
 def compile_swiftshader(api, extra_tokens, swiftshader_root, ninja_root, cc, cxx, out):
   """Build SwiftShader with CMake.
 
   Building SwiftShader works differently from any other Skia third_party lib.
-  See discussion in skia:7671 for more detail.
+  See discussion in skbug.com/40034635 for more detail.
 
   Args:
     swiftshader_root: root of the SwiftShader checkout.
@@ -23,11 +22,10 @@ def compile_swiftshader(api, extra_tokens, swiftshader_root, ninja_root, cc, cxx
       '-DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF',
       '-DREACTOR_ENABLE_MEMORY_SANITIZER_INSTRUMENTATION=OFF',  # Way too slow.
   ]
-  cmake_bin = str(api.vars.workdir.joinpath('cmake_linux', 'bin'))
   env = {
       'CC': cc,
       'CXX': cxx,
-      'PATH': '%s:%%(PATH)s:%s' % (ninja_root, cmake_bin),
+      'PATH': api.path.pathsep.join([str(ninja_root), "%(PATH)s"]),
       # We arrange our MSAN/TSAN prebuilts a little differently than
       # SwiftShader's CMakeLists.txt expects, so we'll just keep our custom
       # setup (everything mentioning libcxx below) and point SwiftShader's
@@ -65,7 +63,7 @@ def compile_swiftshader(api, extra_tokens, swiftshader_root, ninja_root, cc, cxx
     api.run(api.step, 'swiftshader cmake',
             cmd=['cmake'] + swiftshader_opts + [swiftshader_root, '-GNinja'])
     # See https://swiftshader-review.googlesource.com/c/SwiftShader/+/56452 for when the
-    # deprecated targets were added. See skbug.com/12386 for longer-term plans.
+    # deprecated targets were added. See skbug.com/40043473 for longer-term plans.
     api.run(api.step, 'swiftshader ninja', cmd=['ninja', '-C', out, 'vk_swiftshader'])
 
 
@@ -213,7 +211,7 @@ def get_compile_flags(api, checkout_root, out_dir, workdir):
     args['skia_use_cpp20'] = 'true'
   if 'SwiftShader' in extra_tokens:
     swiftshader_root = skia_dir.joinpath('third_party', 'externals', 'swiftshader')
-    # Swiftshader will need to make ninja be on the path
+    # Swiftshader will need to have ninja be on the path
     ninja_root = skia_dir.joinpath('third_party', 'ninja')
     swiftshader_out = out_dir.joinpath('swiftshader_out')
     compile_swiftshader(api, extra_tokens, swiftshader_root, ninja_root, cc, cxx, swiftshader_out)
@@ -311,7 +309,7 @@ def get_compile_flags(api, checkout_root, out_dir, workdir):
     if t.endswith('SAN'):
       sanitize = t
       if api.vars.is_linux and t == 'ASAN':
-        # skia:8712 and skia:8713
+        # skbug.com/40040003 and skbug.com/40040004
         extra_cflags.append('-DSK_ENABLE_SCOPED_LSAN_SUPPRESSIONS')
   if 'SafeStack' in extra_tokens:
     assert sanitize == ''
@@ -371,7 +369,14 @@ def compile_fn(api, checkout_root, out_dir):
   args, env, ccache = get_compile_flags(api, checkout_root, out_dir, workdir)
   gn_args = finalize_gn_flags(args)
   gn = skia_dir.joinpath('bin', 'gn')
-  ninja = skia_dir.joinpath('third_party', 'ninja', 'ninja')
+  ninja_root = skia_dir.joinpath('third_party', 'ninja')
+  ninja = skia_dir.joinpath(ninja_root, 'ninja')
+
+  # Putting ninja on the path makes it easier for subcommands to find it
+  # (e.g. when building Dawn via CMake+ninja)
+  # Importantly, this needs to go *after* depot_tools, so we append it
+  existing_path = env.get('PATH', '%(PATH)s')
+  env['PATH'] = api.path.pathsep.join([existing_path, str(ninja_root)])
 
   with api.context(cwd=skia_dir):
     with api.env(env):

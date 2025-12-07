@@ -54,7 +54,7 @@
 #if defined(SK_GANESH)
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "src/gpu/ganesh/GrDirectContextPriv.h"
-#include "tools/gpu/GrContextFactory.h"
+#include "tools/ganesh/GrContextFactory.h"
 #endif
 
 #ifdef SK_GL
@@ -406,7 +406,7 @@ static sk_sp<SkPathEffect> make_fuzz_patheffect(Fuzz* fuzz, int depth) {
             int count;
             fuzz->nextRange(&count, 0, (int)std::size(intervals));
             fuzz->nextN(intervals, count);
-            return SkDashPathEffect::Make(intervals, count, phase);
+            return SkDashPathEffect::Make({intervals, count}, phase);
         }
         case 8: {
             SkScalar segLength, dev;

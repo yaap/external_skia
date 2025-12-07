@@ -8,6 +8,7 @@
 #ifndef SkRect_DEFINED
 #define SkRect_DEFINED
 
+#include "include/core/SkPathTypes.h"
 #include "include/core/SkPoint.h"
 #include "include/core/SkSize.h"
 #include "include/core/SkSpan.h"
@@ -17,9 +18,11 @@
 #include "include/private/base/SkTFitsIn.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 struct SkRect;
 class SkString;
@@ -831,16 +834,39 @@ struct SK_API SkRect {
         return !(a == b);
     }
 
-    /** Returns four points in quad that enclose SkRect ordered as: top-left, top-right,
-        bottom-right, bottom-left.
+    SkPoint TL() const { return {fLeft,  fTop}; }
+    SkPoint TR() const { return {fRight, fTop}; }
+    SkPoint BL() const { return {fLeft,  fBottom}; }
+    SkPoint BR() const { return {fRight, fBottom}; }
 
-        TODO: Consider adding parameter to control whether quad is clockwise or counterclockwise.
+    /** Returns four points in quad that enclose SkRect,
+     *  respect the specified path-direction.
+     */
+    std::array<SkPoint, 4> toQuad(SkPathDirection dir = SkPathDirection::kCW) const {
+        std::array<SkPoint, 4> storage;
+        this->copyToQuad(storage, dir);
+        return storage;
+    }
 
-        @param quad  storage for corners of SkRect
+    // Same as toQuad(), but copies the 4 points into the specified storage
+    // which must be at least a size of 4.
+    void copyToQuad(SkSpan<SkPoint> pts, SkPathDirection dir = SkPathDirection::kCW) const {
+        SkASSERT(pts.size() >= 4);
+        pts[0] = this->TL();
+        pts[2] = this->BR();
+        if (dir == SkPathDirection::kCW) {
+            pts[1] = this->TR();
+            pts[3] = this->BL();
+        } else {
+            pts[1] = this->BL();
+            pts[3] = this->TR();
+        }
+    }
 
-        example: https://fiddle.skia.org/c/@Rect_toQuad
-    */
-    void toQuad(SkPoint quad[4]) const;
+    // DEPRECATED: use std::array or copyToQuad versions
+    void toQuad(SkPoint quad[4]) const {
+        this->copyToQuad({quad, 4});
+    }
 
     /** Sets SkRect to (0, 0, 0, 0).
 
@@ -878,8 +904,23 @@ struct SK_API SkRect {
         fBottom = bottom;
     }
 
-    /** Sets to bounds of the span of points. If the span is empty,
-        or if a point contains an infinity or NaN, sets to (0, 0, 0, 0).
+    /**
+     * Compute the bounds of the span of points.
+     * If the span is empty, returns the empty-rect {0, 0, 0, 0.
+     * If the span contains non-finite values (inf or nan), returns {}
+     */
+    static std::optional<SkRect> Bounds(SkSpan<const SkPoint> pts);
+
+    static SkRect BoundsOrEmpty(SkSpan<const SkPoint> pts) {
+        if (auto bounds = Bounds(pts)) {
+            return bounds.value();
+        } else {
+            return MakeEmpty();
+        }
+    }
+
+    /** Sets to bounds of SkPoint array with count entries. If count is zero or smaller,
+        or if SkPoint array contains an infinity or NaN, sets to (0, 0, 0, 0).
 
         Result is either empty or sorted: fLeft is less than or equal to fRight, and
         fTop is less than or equal to fBottom.

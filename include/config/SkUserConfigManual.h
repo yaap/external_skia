@@ -21,8 +21,15 @@
   // Check error is expensive. HWUI historically also doesn't check its allocations
   #define GR_GL_CHECK_ALLOC_WITH_GET_ERROR 0
 
-  // Staging flags
+  // Disable these Vulkan features until debugged
+  // b/439531864
+  #define SK_DISABLE_GRAPHICS_PIPELINE_LIBRARY
 
+  // Graphite features
+  #define SK_TRACE_GRAPHITE_PIPELINE_USE
+
+  // Staging flags
+  #define SK_SUPPORT_LEGACY_RRECT_TRANSFORM
   #define SK_SUPPORT_LEGACY_EMBOSSMASKFILTER
   #define SK_SUPPORT_UNSPANNED_APIS
 
@@ -34,6 +41,8 @@
   // TODO (b/239048372): Remove this flag when we can safely migrate apps to the
   // new behavior.
   #define SK_SUPPORT_LEGACY_ALPHA_BITMAP_AS_COVERAGE
+
+  #define SK_DNG_VERSION 0x01070100
 
 #if defined(__APPLE__) && !defined(SK_R32_SHIFT)
   // Set macOS to use BGRA format to match Linux and Windows
