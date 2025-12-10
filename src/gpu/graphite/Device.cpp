@@ -505,20 +505,9 @@ Device::Device(Recorder* recorder, sk_sp<DrawContext> dc)
         , fSubRunControl(recorder->priv().caps()->getSubRunControl(
                 fDC->surfaceProps().isUseDeviceIndependentFonts())) {
     SkASSERT(SkToBool(fDC) && SkToBool(fRecorder));
-    if (fDC->target()->textureInfo().sampleCount() > SampleCount::k1) {
-        // Target is inherently multisampled
-        fMSAASupported = true;
-    } else if (fRecorder->priv().caps()->defaultMSAASamplesCount() > SampleCount::k1) {
-        if (fRecorder->priv().caps()->msaaRenderToSingleSampledSupport()) {
-            // Backend-managed MSAA is supported
-            fMSAASupported = true;
-        } else {
-            // Graphite-managed MSAA is supported
-            fMSAASupported = fRecorder->priv().caps()->isSampleCountSupported(
-                    TextureInfoPriv::ViewFormat(fDC->target()->textureInfo()),
-                    fRecorder->priv().caps()->defaultMSAASamplesCount());
-        }
-    }
+    const SampleCount supportedCount = fRecorder->priv().caps()->getCompatibleMSAASampleCount(
+            fDC->target()->textureInfo());
+    fMSAASupported = supportedCount > SampleCount::k1;
 }
 
 Device::~Device() {
@@ -2002,7 +1991,8 @@ std::pair<const Renderer*, PathAtlas*> Device::chooseRenderer(const Transform& l
     // Prefer compute atlas draws if supported. This currently implicitly filters out clip draws as
     // they require MSAA. Eventually we may want to route clip shapes to the atlas as well but not
     // if hardware MSAA is required.
-    if (atlasProvider->isAvailable(AtlasProvider::PathAtlasFlags::kCompute) &&
+    if (RendererProvider::IsSupported(PathRendererStrategy::kComputeAnalyticAA,
+                                      fRecorder->priv().caps()) &&
         use_compute_atlas_when_available(strategy)) {
         PathAtlas* atlas = fDC->getComputePathAtlas(fRecorder);
         SkASSERT(atlas);
@@ -2020,7 +2010,7 @@ std::pair<const Renderer*, PathAtlas*> Device::chooseRenderer(const Transform& l
     const bool useRasterAtlasByDefault = !fMSAASupported ||
                                          (fAtlasedPathCount < kMaxSmallPathAtlasCount &&
                                           all(drawBounds.size() <= minPathSizeForMSAA));
-    if (!pathAtlas && atlasProvider->isAvailable(AtlasProvider::PathAtlasFlags::kRaster) &&
+    if (!pathAtlas &&
         (strategy == PathRendererStrategy::kRasterAA ||
          (!strategy.has_value() && useRasterAtlasByDefault))) {
         // NOTE: RasterPathAtlas doesn't implement `PathAtlas::isSuitableForAtlasing` as it doesn't
