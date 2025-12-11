@@ -3,7 +3,7 @@
   "direct": [
     {
       "build_file": "//bazel/external/dawn:BUILD.bazel",
-      "commit": "8de9b80c5bd9b01a4715151f8844c1fbd5d6d392",
+      "commit": "9e1721615b331424f2249c56c76841792b75dd61",
       "name": "dawn",
       "remote": "https://dawn.googlesource.com/dawn.git"
     },
@@ -30,7 +30,7 @@
     },
     {
       "build_file": "//bazel/external/freetype:BUILD.bazel",
-      "commit": "1518bc83d26b434031bd12c706ac3c7dab3902fd",
+      "commit": "30e45abe939d7c2cbdf268f277c293400096868c",
       "name": "freetype",
       "patches": [
         "//bazel/external/freetype:config_files.patch"
@@ -149,7 +149,7 @@
       "remote": "https://skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers.git"
     },
     {
-      "commit": "940d4850f12cef87336b94fee4b7eaf9ca394222",
+      "commit": "49a8b7cd70fb8b62f920bb72091b73123d6cd28f",
       "name": "spirv_tools",
       "remote": "https://skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools.git"
     },
@@ -197,7 +197,7 @@
       "remote": "https://skia.googlesource.com/external/github.com/google/brotli.git"
     },
     {
-      "commit": "564023aa53767b5f60b3a556f0a025b7b7e8241e",
+      "commit": "adabe6e669a66cb842e7a87a08620e486b6276f6",
       "name": "abseil_cpp",
       "remote": "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp"
     },
