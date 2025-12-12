@@ -3,7 +3,7 @@
   "direct": [
     {
       "build_file": "//bazel/external/dawn:BUILD.bazel",
-      "commit": "9e1721615b331424f2249c56c76841792b75dd61",
+      "commit": "f39150de4906bdac6f3fec9a3a0430c54cffdbc4",
       "name": "dawn",
       "remote": "https://dawn.googlesource.com/dawn.git"
     },
@@ -39,7 +39,7 @@
     },
     {
       "build_file": "//bazel/external/harfbuzz:BUILD.bazel",
-      "commit": "08b52ae2e44931eef163dbad71697f911fadc323",
+      "commit": "31695252eb6ed25096893aec7f848889dad874bc",
       "name": "harfbuzz",
       "patches": [
         "//bazel/external/harfbuzz:config_files.patch"
@@ -144,12 +144,12 @@
       "remote": "https://chromium.googlesource.com/external/github.com/KhronosGroup/SPIRV-Cross"
     },
     {
-      "commit": "6146b3d9ad4fcc5fb512209d348e97ce03749169",
+      "commit": "e8f037b983727d4b433bd9c7a6be453b4dd9c108",
       "name": "spirv_headers",
       "remote": "https://skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers.git"
     },
     {
-      "commit": "49a8b7cd70fb8b62f920bb72091b73123d6cd28f",
+      "commit": "445d0c760c47d10b745112ea6d17f137e15ad48c",
       "name": "spirv_tools",
       "remote": "https://skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools.git"
     },

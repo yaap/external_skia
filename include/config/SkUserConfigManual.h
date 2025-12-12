@@ -28,7 +28,6 @@
   #define SK_SUPPORT_LEGACY_RRECT_TRANSFORM
   #define SK_SUPPORT_LEGACY_EMBOSSMASKFILTER
   #define SK_SUPPORT_UNSPANNED_APIS
-  #define SK_HIDE_PATH_EDIT_METHODS
 
   // Logging settings
   #define SKGPU_GRAPHITE_LOWEST_ACTIVE_LOG_PRIORITY skgpu::graphite::LogPriority::kWarning
