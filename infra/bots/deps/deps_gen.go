@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "4f4f02fe5be107d457a283c443b020fde28aecc1",
+		Version: "110aa16f60f84c0552edd96fce51684bc0e657b5",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -89,17 +89,17 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Headers": {
 		Id:      "chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Headers",
-		Version: "8a1e5840e7833a90b79c3fddb639f57c3772a641",
+		Version: "450bd2232225d6c7728a4108055ac2e37cef6475",
 		Path:    "third_party/externals/vulkan-headers",
 	},
 	"chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Tools": {
 		Id:      "chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Tools",
-		Version: "2a288f8284243645a8a50fe5f4c53209fdbd7905",
+		Version: "1343cb3a9ca1a52fc6575f1471cf2b656bf1050a",
 		Path:    "third_party/externals/vulkan-tools",
 	},
 	"chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Utility-Libraries": {
 		Id:      "chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Utility-Libraries",
-		Version: "3e303cbe2bb165887c94d96498eef33b4309b5bd",
+		Version: "9a3f4105c16bde4e2717eeab0fcc5a49236f7294",
 		Path:    "third_party/externals/vulkan-utility-libraries",
 	},
 	"chromium.googlesource.com/external/github.com/KhronosGroup/glslang": {
@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/vulkan-deps": {
 		Id:      "chromium.googlesource.com/vulkan-deps",
-		Version: "1745c51c6d9cacdfb0596e97b45bd0aa30f7156e",
+		Version: "686b39ce6344bfc70f4d4c36da00bc5bfceecd80",
 		Path:    "third_party/externals/vulkan-deps",
 	},
 	"chromium.googlesource.com/webm/libwebp": {
@@ -164,7 +164,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "02bbb24c16b47fb17f0eb34a88313a84724a09b9",
+		Version: "e78ae5f0450857eb95217ef469fbb173a3cf103d",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
