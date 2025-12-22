@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "110aa16f60f84c0552edd96fce51684bc0e657b5",
+		Version: "69e116d6279b964ca7d9e1cb09dd58dc6d5e239b",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -164,7 +164,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "e78ae5f0450857eb95217ef469fbb173a3cf103d",
+		Version: "c05bf34420a90bfbd8ba9ddce6ef1b1756ce3c31",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
