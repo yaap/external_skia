@@ -24,9 +24,6 @@ config("skia_public") {
   defines = [
     "SK_CODEC_DECODES_BMP",
     "SK_CODEC_DECODES_WBMP",
-
-    # TODO(kjlubick,fmalita) Remove when clients updated and APIs deleted.
-    "SK_HIDE_PATH_EDIT_METHODS",
   ]
   cflags_objcc = []
   if (is_component_build) {
@@ -2413,6 +2410,8 @@ if (skia_enable_tools) {
           sources += [
             "tools/graphite/dawn/GraphiteDawnTestContext.cpp",
             "tools/graphite/dawn/GraphiteDawnTestContext.h",
+            "tools/graphite/dawn/GraphiteDawnToggles.cpp",
+            "tools/graphite/dawn/GraphiteDawnToggles.h",
           ]
         }
         if (skia_use_metal) {
