@@ -1306,7 +1306,7 @@ optional("png_encode_libpng") {
     "SK_CODEC_ENCODES_PNG_WITH_LIBPNG",
   ]
 
-  public = skia_encode_png_public
+  public = skia_encode_libpng_public
   deps = [
     ":png_encode_common",
     "//third_party/libpng",
@@ -1992,10 +1992,6 @@ skia_component("skia") {
   if (skia_android_framework_use_perfetto) {
     defines += [ "SK_ANDROID_FRAMEWORK_USE_PERFETTO" ]
     sources += [ "src/android/SkAndroidFrameworkPerfettoStaticStorage.cpp" ]
-  }
-
-  if (!skia_enable_ganesh && !skia_enable_graphite) {
-    sources += skia_no_slug_srcs
   }
 }
 
