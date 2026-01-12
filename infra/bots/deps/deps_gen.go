@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "12a206e9a5528a8d9ad01d582ace18c77a5e76f3",
+		Version: "2d91f554ab55bd1bef6998ab4094f60ae3e7feb5",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/vulkan-deps": {
 		Id:      "chromium.googlesource.com/vulkan-deps",
-		Version: "6c9752cf9119d091c81437a06849c353af1bb41a",
+		Version: "201203c6a0ddb3826a6cce04acc9e5a54cfed609",
 		Path:    "third_party/externals/vulkan-deps",
 	},
 	"chromium.googlesource.com/webm/libwebp": {
@@ -174,7 +174,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia.googlesource.com/buildbot": {
 		Id:      "skia.googlesource.com/buildbot",
-		Version: "0b9789ad2ae7ab43abf5ec9e1a300fc0b4d90668",
+		Version: "78a0372657cb0bcc8a13baba8c1626a8d96a864a",
 		Path:    "infra/skia-infra",
 	},
 	"skia.googlesource.com/external/github.com/AOMediaCodec/libavif": {
@@ -254,7 +254,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia/tools/sk": {
 		Id:      "skia/tools/sk",
-		Version: "git_revision:0b9789ad2ae7ab43abf5ec9e1a300fc0b4d90668",
+		Version: "git_revision:78a0372657cb0bcc8a13baba8c1626a8d96a864a",
 		Path:    "bin",
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
