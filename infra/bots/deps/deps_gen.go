@@ -154,7 +154,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/vulkan-deps": {
 		Id:      "chromium.googlesource.com/vulkan-deps",
-		Version: "c159d041dce0377b2d7647357302c69483ab7cdb",
+		Version: "ae18e4e9f317730c4df7d318374e880599f940c8",
 		Path:    "third_party/externals/vulkan-deps",
 	},
 	"chromium.googlesource.com/webm/libwebp": {
@@ -164,7 +164,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"dawn.googlesource.com/dawn": {
 		Id:      "dawn.googlesource.com/dawn",
-		Version: "c30843e52d7c681a3ec17e27484c2a1105be5023",
+		Version: "35d0f11eaa71ef2673dbedb376ceb2a2ad89f222",
 		Path:    "third_party/externals/dawn",
 	},
 	"infra/3pp/tools/ninja": {
@@ -174,7 +174,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia.googlesource.com/buildbot": {
 		Id:      "skia.googlesource.com/buildbot",
-		Version: "d5e81edf7a6a0a7a934ca0e288bfbedd0bea3990",
+		Version: "c270c40ffe5c768a029265e986327968be998730",
 		Path:    "infra/skia-infra",
 	},
 	"skia.googlesource.com/external/github.com/AOMediaCodec/libavif": {
@@ -204,12 +204,12 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers": {
 		Id:      "skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers",
-		Version: "babee77020ff82b571d723ce2c0262e2ec0ee3f1",
+		Version: "04f10f650d514df88b76d25e83db360142c7b174",
 		Path:    "third_party/externals/spirv-headers",
 	},
 	"skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools": {
 		Id:      "skia.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools",
-		Version: "4c1ae3cd6f9076271cd64acde8cbef1d1287f27f",
+		Version: "dfc5ab82cdf83c6b7ae3bc4198822c130df6f2a6",
 		Path:    "third_party/externals/spirv-tools",
 	},
 	"skia.googlesource.com/external/github.com/emscripten-core/emsdk": {
@@ -254,7 +254,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia/tools/sk": {
 		Id:      "skia/tools/sk",
-		Version: "git_revision:d5e81edf7a6a0a7a934ca0e288bfbedd0bea3990",
+		Version: "git_revision:c270c40ffe5c768a029265e986327968be998730",
 		Path:    "bin",
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
