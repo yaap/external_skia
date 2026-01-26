@@ -24,7 +24,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"chromium.googlesource.com/angle/angle": {
 		Id:      "chromium.googlesource.com/angle/angle",
-		Version: "66ecfe2e967ec72a3e7f67e02b163b195fab5760",
+		Version: "80d15542bf705570a24189ab64a9404382b10200",
 		Path:    "third_party/externals/angle2",
 	},
 	"chromium.googlesource.com/chromium/deps/icu": {
@@ -174,7 +174,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia.googlesource.com/buildbot": {
 		Id:      "skia.googlesource.com/buildbot",
-		Version: "4c0eeac528234b20eee6430423cec8cf1f59178a",
+		Version: "9a99124d0a26172d451e44f773b53ff68c080285",
 		Path:    "infra/skia-infra",
 	},
 	"skia.googlesource.com/external/github.com/AOMediaCodec/libavif": {
@@ -254,7 +254,7 @@ var deps = deps_parser.DepsEntries{
 	},
 	"skia/tools/sk": {
 		Id:      "skia/tools/sk",
-		Version: "git_revision:4c0eeac528234b20eee6430423cec8cf1f59178a",
+		Version: "git_revision:9a99124d0a26172d451e44f773b53ff68c080285",
 		Path:    "bin",
 	},
 	"swiftshader.googlesource.com/SwiftShader": {
