@@ -28514,7 +28514,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -28595,7 +28595,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -28676,7 +28676,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -28757,7 +28757,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -43045,7 +43045,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -43133,7 +43133,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -43221,7 +43221,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -43309,7 +43309,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -43397,7 +43397,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
@@ -43485,7 +43485,7 @@
         "Housekeeper-PerCommit-IsolateSkImage"
       ],
       "dimensions": [
-        "device_os:BD1A.250702.001",
+        "device_os:BP41.250916.012.A1",
         "device_type:frankel",
         "os:Android",
         "pool:Skia"
