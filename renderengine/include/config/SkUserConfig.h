@@ -51,10 +51,6 @@
 #define SK_IN_RENDERENGINE
 #endif
 
-#ifndef SK_USE_VMA
-#define SK_USE_VMA
-#endif
-
 #ifndef SK_VULKAN
 #define SK_VULKAN
 #endif
