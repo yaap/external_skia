@@ -24,6 +24,7 @@ public:
     DawnCaps(const DawnBackendContext&, const ContextOptions&);
     ~DawnCaps() override;
 
+    bool supportsHalfPrecision() const { return fSupportsHalfPrecision; }
     bool useAsyncPipelineCreation() const { return fUseAsyncPipelineCreation; }
     bool allowScopedErrorChecks() const { return fAllowScopedErrorChecks; }
 
@@ -50,6 +51,7 @@ public:
     TextureInfo getDefaultStorageTextureInfo(SkColorType) const override;
     SkISize getDepthAttachmentDimensions(const TextureInfo&,
                                          const SkISize colorAttachmentDimensions) const override;
+
     UniqueKey makeGraphicsPipelineKey(const GraphicsPipelineDesc&,
                                       const RenderPassDesc&) const override;
     bool extractGraphicsDescs(const UniqueKey&,
@@ -157,6 +159,7 @@ private:
     bool fAllowScopedErrorChecks = true;
 
     bool fSupportsCommandBufferTimestamps = false;
+    bool fSupportsHalfPrecision = false;
 };
 
 } // namespace skgpu::graphite

@@ -339,8 +339,7 @@ sk_sp<DawnGraphicsPipeline> DawnGraphicsPipeline::Make(
     SkSL::ProgramSettings settings;
     settings.fSharpenTextures = true;
     settings.fForceNoRTFlip = true;
-    // TODO(michaelludwig): Set this to false when "shader-f16" is available.
-    settings.fForceHighPrecision = true;
+    settings.fForceHighPrecision = !caps.supportsHalfPrecision();
 
     ShaderErrorHandler* errorHandler = caps.shaderErrorHandler();
 
@@ -769,10 +768,7 @@ DawnGraphicsPipeline::DawnGraphicsPipeline(
     , fGroupLayouts(std::move(groupLayouts))
     , fPrimitiveType(primitiveType)
     , fStencilReferenceValue(refValue)
-    , fImmutableSamplers(std::move(immutableSamplers)) {
-    // Update the newly-created underlying GPU object's label to match the Resource's
-    this->synchronizeBackendLabel();
-}
+    , fImmutableSamplers(std::move(immutableSamplers)) {}
 
 DawnGraphicsPipeline::~DawnGraphicsPipeline() {
     this->freeGpuData();
