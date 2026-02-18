@@ -7674,11 +7674,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -7766,11 +7761,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -7858,11 +7848,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -7950,11 +7935,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -8042,11 +8022,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -8794,11 +8769,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -8886,11 +8856,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -8978,11 +8943,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -9070,11 +9030,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -9162,11 +9117,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
@@ -9254,11 +9204,6 @@
           "name": "infra/tools/mac_toolchain/${platform}",
           "path": "mac_toolchain",
           "version": "git_revision:0cb1e51344de158f72524c384f324465aebbcef2"
-        },
-        {
-          "name": "skia/bots/provisioning_profile_ios",
-          "path": "provisioning_profile_ios",
-          "version": "version:14"
         }
       ],
       "command": [
