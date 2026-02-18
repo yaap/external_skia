@@ -3,7 +3,7 @@
   "direct": [
     {
       "build_file": "//bazel/external/dawn:BUILD.bazel",
-      "commit": "aad5a316dd8677ab254c315e1c8c2b96724d6f98",
+      "commit": "20c958d2b3d7b41c4887092b3c83930099102a07",
       "name": "dawn",
       "remote": "https://dawn.googlesource.com/dawn.git"
     },
@@ -173,7 +173,7 @@
     },
     {
       "build_file": "//bazel/external/vulkan_utility_libraries:BUILD.bazel",
-      "commit": "50af38b6cd43afb1462f9ad26b8d015382d11a3d",
+      "commit": "8d648b091ff36eb635431f5917a2f0b8aa5377da",
       "name": "vulkan_utility_libraries",
       "remote": "https://chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Utility-Libraries"
     },
