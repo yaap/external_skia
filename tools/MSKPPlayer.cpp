@@ -135,6 +135,32 @@ public:
     ~CmdRecordCanvas() override { this->recordPicCmd(); }
 
 protected:
+    void willSave() override {
+        fRecorder.getRecordingCanvas()->save();
+    }
+    SaveLayerStrategy getSaveLayerStrategy(const SaveLayerRec& rec) override {
+        return SkCanvas::kNoLayer_SaveLayerStrategy;
+    }
+    bool onDoSaveBehind(const SkRect*) override {
+        return false;
+    }
+    void willRestore() override {
+        fRecorder.getRecordingCanvas()->restore();
+    }
+
+    void didConcat44(const SkM44& m44) override {
+        fRecorder.getRecordingCanvas()->concat(m44);
+    }
+    void didSetM44(const SkM44& m44) override {
+        fRecorder.getRecordingCanvas()->setMatrix(m44);
+    }
+    void didScale(SkScalar x, SkScalar y) override {
+        fRecorder.getRecordingCanvas()->scale(x, y);
+    }
+    void didTranslate(SkScalar x, SkScalar y) override {
+        fRecorder.getRecordingCanvas()->translate(x, y);
+    }
+
     void onDrawPaint(const SkPaint& paint) override {
         fRecorder.getRecordingCanvas()->drawPaint(paint);
     }
@@ -360,6 +386,25 @@ protected:
         if (paint) {
             this->restore();
         }
+    }
+
+    void onClipRect(const SkRect& rect, SkClipOp op, ClipEdgeStyle e) override {
+        fRecorder.getRecordingCanvas()->clipRect(rect, op, e);
+    }
+    void onClipRRect(const SkRRect& rect, SkClipOp op, ClipEdgeStyle e) override {
+        fRecorder.getRecordingCanvas()->clipRRect(rect, op, e);
+    }
+    void onClipPath(const SkPath& path, SkClipOp op, ClipEdgeStyle e) override {
+        fRecorder.getRecordingCanvas()->clipPath(path, op, e);
+    }
+    void onClipShader(sk_sp<SkShader> shader, SkClipOp op) override {
+        fRecorder.getRecordingCanvas()->clipShader(std::move(shader), op);
+    }
+    void onClipRegion(const SkRegion& region, SkClipOp op) override {
+        fRecorder.getRecordingCanvas()->clipRegion(region, op);
+    }
+    void onResetClip() override {
+        // TODO: Android only
     }
 
 private:
