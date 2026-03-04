@@ -26,7 +26,6 @@
   // Staging flags
   #define SK_SUPPORT_LEGACY_RRECT_TRANSFORM
   #define SK_SUPPORT_LEGACY_EMBOSSMASKFILTER
-  #define SK_ENABLE_LEGACY_SHADERCONTEXT
 
   // Logging settings
   #define SKIA_LOWEST_ACTIVE_LOG_PRIORITY SkLogPriority::kWarning
