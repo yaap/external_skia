@@ -32,8 +32,8 @@ public:
 
     bool setNewCommandBufferResources() override;
 
-    bool startTimerQuery() override;
-    void endTimerQuery() override;
+    bool startStatsQuery(GpuStatsFlags) override;
+    void endStatsQuery(GpuStatsFlags) override;
     std::optional<GpuStats> gpuStats() override;
 
     bool submit(VkQueue, const SubmitInfo&);
@@ -236,6 +236,7 @@ private:
 
     std::array<float, 4> fCachedBlendConstant;
 
+    bool fHasStatsQuery = false;
     VkQueryPool fTimestampQueryPool = VK_NULL_HANDLE;
 };
 
