@@ -30,7 +30,7 @@
     },
     {
       "build_file": "//bazel/external/freetype:BUILD.bazel",
-      "commit": "b91f75bd02db43b06d634591eb286d3eb0ce3b65",
+      "commit": "264b5fbf5b912b39f98d038bf75d39be0a73f21b",
       "name": "freetype",
       "patches": [
         "//bazel/external/freetype:config_files.patch"
@@ -39,7 +39,7 @@
     },
     {
       "build_file": "//bazel/external/harfbuzz:BUILD.bazel",
-      "commit": "31695252eb6ed25096893aec7f848889dad874bc",
+      "commit": "9cb1fee51069b206effb4736e443b038d230789d",
       "name": "harfbuzz",
       "patches": [
         "//bazel/external/harfbuzz:config_files.patch"
