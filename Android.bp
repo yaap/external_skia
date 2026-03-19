@@ -5450,6 +5450,8 @@ cc_defaults {
         "tests/graphite/RecordingSurfacesTest.cpp",
         "tests/graphite/RectTest.cpp",
         "tests/graphite/ShapeTest.cpp",
+        "tests/graphite/SubmitWithFinishProcTest.cpp",
+        "tests/graphite/SwizzleTest.cpp",
         "tests/graphite/TextureFormatTest.cpp",
         "tests/graphite/TextureProxyTest.cpp",
         "tests/graphite/TransformTest.cpp",
