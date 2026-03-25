@@ -133,10 +133,13 @@ using PixelData = std::array<uint8_t, 16>; // The largest texel/pixel size is RG
 uint32_t channel_to_bits(const Channel& channel, float value) {
     switch (channel.fType) {
         case Pad:
-            // Pad should only be used with 'x', then just fall through to turn x's value as Unorm
-            // for packing into the right bit size
+            // Pad should only be used with 'x', which produces NaN in channel_to_float, so
+            // replace `value` with the default 'x' bit pattern in gen_channel_values, and then
+            // fall through to UNorm handling to adjust it to the right bit depth
             SkASSERT(channel.fName == 'x');
+            value = 0b0101 / 15.f;
             [[fallthrough]];
+
         case sRGB:
             // sRGB data is stored in a non-linear gamma and automatically decodes to linear when
             // being sampled or rendered into. This means an SRGB_8888 image with a linear
@@ -173,9 +176,7 @@ uint32_t channel_to_bits(const Channel& channel, float value) {
 
 float channel_to_float(const Channel& channel, uint32_t bits) {
     switch (channel.fType) {
-        case Signed:
-        case Pad:
-        case sRGB: [[fallthrough]]; // first treat as unorm then apply gamma TF (when sRGB)
+        case sRGB: [[fallthrough]]; // first treat as unorm then apply gamma TF
         case UNorm: {
             float vf = bits * (1 / (float) ((1 << channel.fBits) - 1));
             if (channel.fType == sRGB) {
@@ -188,6 +189,9 @@ float channel_to_float(const Channel& channel, uint32_t bits) {
 
         case FNorm:  [[fallthrough]]; // Values are interpreted the same, values are in [0,1]
         case Float:  return channel.fBits == 16 ? SkHalfToFloat((SkHalf) bits) : SkBits2Float(bits);
+
+        case Signed: [[fallthrough]];
+        case Pad:    return SK_FloatNaN; // No floating point printing
     }
     SkUNREACHABLE;
 }
@@ -536,6 +540,7 @@ PixelData transfer_data(const TextureFormatXferFn& xferFn, const PixelData& inpu
                                                         {'a', 32, Float}}},
     {kR8G8_unorm_SkColorType,         Swizzle("rg01"), {{'r', 8, UNorm}, {'g', 8, UNorm}}},
     {kA16_float_SkColorType,          Swizzle("000a"), {{'a', 16, Float}}},
+    {kR16_float_SkColorType,          Swizzle("r001"), {{'r', 16, Float}}},
     {kR16G16_float_SkColorType,       Swizzle("rg01"), {{'r', 16, Float}, {'g', 16, Float}}},
     {kA16_unorm_SkColorType,          Swizzle("000a"), {{'a', 16, UNorm}}},
     {kR16_unorm_SkColorType,          Swizzle("r001"), {{'r', 16, UNorm}}},
@@ -577,14 +582,13 @@ static const FormatExpectation kExpectations[] {
     {.fFormat=TextureFormat::kR16F,
      .fChannels={{'r', 16, Float}},
      .fXferSwizzle=Swizzle("r001"),
-     .fCompatibleColorTypes={{kA16_float_SkColorType, Swizzle("000r"), Swizzle("a000")}}},
+     .fCompatibleColorTypes={{kR16_float_SkColorType, Swizzle::RGBA(), Swizzle::RGBA()},
+                             {kA16_float_SkColorType, Swizzle("000r"), Swizzle("a000")}}},
 
     {.fFormat=TextureFormat::kR32F,
      .fChannels={{'r', 32, Float}},
      .fXferSwizzle=std::nullopt,
-     // TODO(b/494552359): Use kR16_float_SkColorType once
-     // https://skia-review.git.corp.google.com/c/skia/+/1165337 is landed.
-     .fCompatibleColorTypes={{kA16_float_SkColorType, Swizzle("000r"), Swizzle("a000")}}},
+     .fCompatibleColorTypes={{kR16_float_SkColorType, Swizzle::RGBA(), Swizzle::RGBA()}}},
 
     {.fFormat=TextureFormat::kA8,
      .fChannels={{'a', 8, UNorm}},
@@ -826,16 +830,6 @@ static const FormatExpectation kExpectations[] {
 void test_format_transfers(skiatest::Reporter* r,
                            const FormatExpectation& textureFormat,
                            const ColorTypeExpectation& textureCT) {
-    auto [_, xferOps] = TextureFormatColorTypeInfo(textureFormat.fFormat);
-    if (xferOps & FormatXferOp::kDropAlpha) {
-        // 3-channel formats aren't supported by transfer_data() yet.
-        return;
-    }
-    if (textureCT.fColorType == kA16_float_SkColorType) {
-        // TODO(b/494552359): Re-enable this once we have a kR16F color type
-        return;
-    }
-
     // When transferring to CPU->GPU, we want to apply the textureCT's write swizzle, but if that
     // is undefined because rendering is disabled, infer a "write" swizzle by picking the swizzle
     // from its color type.
