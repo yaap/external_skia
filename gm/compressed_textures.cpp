@@ -1,13 +1,11 @@
 /*
- * Copyright 2020 Google Inc.
+ * Copyright 2020 Google LLC
  *
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
 
 #include "include/core/SkTypes.h"
-
-#if !defined(SK_BUILD_FOR_GOOGLE3)  // Google3 doesn't have etc1.h
 
 #include "gm/gm.h"
 #include "include/core/SkBitmap.h"
@@ -17,6 +15,7 @@
 #include "include/core/SkImage.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkPath.h"
+#include "include/core/SkPathBuilder.h"
 #include "include/core/SkRect.h"
 #include "include/core/SkRefCnt.h"
 #include "include/core/SkSize.h"
@@ -63,8 +62,7 @@ static SkPath make_gear(SkISize dimensions, int numTeeth) {
 
     float angle = 0.0f;
 
-    SkPath tmp;
-    tmp.setFillType(SkPathFillType::kWinding);
+    SkPathBuilder tmp(SkPathFillType::kWinding);
 
     tmp.moveTo(gen_pt(angle, outerRad));
 
@@ -82,7 +80,7 @@ static SkPath make_gear(SkISize dimensions, int numTeeth) {
         tmp.addCircle(0.0f, 0.0f, fInnerRad, SkPathDirection::kCCW);
     }
 
-    return tmp;
+    return tmp.detach();
 }
 
 // Render one level of a mipmap
@@ -182,7 +180,6 @@ static CompressedImageObjects make_compressed_image(SkCanvas* canvas,
         if (texture) {
             image = SkImages::WrapTexture(recorder,
                                           texture->texture(),
-                                          skgpu::CompressionTypeToSkColorType(compression),
                                           kPremul_SkAlphaType,
                                           /*colorSpace=*/nullptr);
             if (image) {
@@ -400,5 +397,3 @@ private:
 DEF_GM(return new CompressedTexturesGM(CompressedTexturesGM::Type::kNormal);)
 DEF_GM(return new CompressedTexturesGM(CompressedTexturesGM::Type::kNonPowerOfTwo);)
 DEF_GM(return new CompressedTexturesGM(CompressedTexturesGM::Type::kNonMultipleOfFour);)
-
-#endif

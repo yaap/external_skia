@@ -29,7 +29,9 @@ class SkDevice;
 class SkGlyph;
 class SkMaskFilter;
 class SkMatrix;
+class SkMipmap;
 class SkPath;
+struct SkPathRaw;
 class SkRRect;
 class SkRasterClip;
 class SkShader;
@@ -55,7 +57,7 @@ class ContextImpl;
     that must be done afterwards (by calling filterMask). The maskfilter is provided
     solelely to assist in computing the mask's bounds (if the mode requests that).
 */
-bool DrawToMask(const SkPath& devPath,
+bool DrawToMask(const SkPathRaw& devRaw,
                 const SkIRect& clipBounds,
                 const SkMaskFilter*,
                 const SkMatrix* filterMatrix,
@@ -83,7 +85,8 @@ public:
                             const SkMatrix&,
                             const SkRect* dstOrNull,
                             const SkSamplingOptions&,
-                            const SkPaint&) const = 0;
+                            const SkPaint&,
+                            sk_sp<SkMipmap>) const = 0;
 };
 
 /**
@@ -118,9 +121,6 @@ public:
     // Specialized draw for RRect that only draws if it is nine-patchable.
     bool drawRRectNinePatch(const SkRRect&, const SkPaint&) const;
     /**
-     *  To save on mallocs, we allow a flag that tells us that srcPath is
-     *  mutable, so that we don't have to make copies of it as we transform it.
-     *
      *  If prePathMatrix is not null, it should logically be applied before any
      *  stroking or other effects. If there are no effects on the paint that
      *  affect the geometry/rasterization, then the pre matrix can just be
@@ -128,9 +128,8 @@ public:
      */
     void drawPath(const SkPath& path,
                   const SkPaint& paint,
-                  const SkMatrix* prePathMatrix,
-                  bool pathIsMutable) const {
-        this->drawPath(path, paint, prePathMatrix, pathIsMutable, SkDrawCoverage::kNo);
+                  const SkMatrix* prePathMatrix) const {
+        this->drawPath(path, paint, prePathMatrix, SkDrawCoverage::kNo);
     }
 
     /**
@@ -146,7 +145,6 @@ public:
         this->drawPath(src,
                        paint,
                        nullptr,
-                       false,
                        isHairline ? SkDrawCoverage::kNo : SkDrawCoverage::kYes,
                        customBlitter);
     }
@@ -186,8 +184,12 @@ public:
                                       const SkRect& devBounds);
 
     /* If dstOrNull is null, computes a dst by mapping the bitmap's bounds through the matrix. */
-    void drawBitmap(const SkBitmap&, const SkMatrix&, const SkRect* dstOrNull,
-                    const SkSamplingOptions&, const SkPaint&) const override;
+    void drawBitmap(const SkBitmap&,
+                    const SkMatrix&,
+                    const SkRect* dstOrNull,
+                    const SkSamplingOptions&,
+                    const SkPaint&,
+                    sk_sp<SkMipmap>) const override;
     void drawSprite(const SkBitmap&, int x, int y, const SkPaint&) const;
     void drawGlyphRunList(SkCanvas* canvas,
                           GlyphRunListPainter* glyphPainter,
@@ -213,13 +215,12 @@ private:
     void drawPath(const SkPath&,
                   const SkPaint&,
                   const SkMatrix* preMatrix,
-                  bool pathIsMutable,
                   SkDrawCoverage drawCoverage,
                   SkBlitter* customBlitter = nullptr) const;
 
     void drawLine(const SkPoint[2], const SkPaint&) const;
 
-    void drawDevPath(const SkPath& devPath,
+    void drawDevPath(const SkPathRaw&,
                      const SkPaint& paint,
                      SkDrawCoverage drawCoverage,
                      SkBlitter* customBlitter,

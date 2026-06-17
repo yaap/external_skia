@@ -8,7 +8,6 @@
 #ifndef SkUserConfigManual_DEFINED
 #define SkUserConfigManual_DEFINED
   #include <android/log.h>
-  #include "include/gpu/graphite/LogPriority.h"
 
   #define SK_BUILD_FOR_ANDROID_FRAMEWORK
   #define SK_DEFAULT_FONT_CACHE_LIMIT   (768 * 1024)
@@ -21,20 +20,17 @@
   // Check error is expensive. HWUI historically also doesn't check its allocations
   #define GR_GL_CHECK_ALLOC_WITH_GET_ERROR 0
 
-  // Disable these Vulkan features until debugged
-  // b/439531864
-  #define SK_DISABLE_GRAPHICS_PIPELINE_LIBRARY
-
   // Graphite features
   #define SK_TRACE_GRAPHITE_PIPELINE_USE
 
   // Staging flags
   #define SK_SUPPORT_LEGACY_RRECT_TRANSFORM
   #define SK_SUPPORT_LEGACY_EMBOSSMASKFILTER
-  #define SK_SUPPORT_UNSPANNED_APIS
+  #define SK_ENABLE_LEGACY_SHADERCONTEXT
+  #define SK_DISABLE_LEGACY_MOCK_BACKENDSURFACE
 
   // Logging settings
-  #define SKGPU_GRAPHITE_LOWEST_ACTIVE_LOG_PRIORITY skgpu::graphite::LogPriority::kWarning
+  #define SKIA_LOWEST_ACTIVE_LOG_PRIORITY SkLogPriority::kWarning
   #define SK_ABORT(fmt, ...) __android_log_assert(nullptr, "skia", "[skia] \"" fmt "\" in {%s}",  \
                                                   ##__VA_ARGS__, __PRETTY_FUNCTION__)
 

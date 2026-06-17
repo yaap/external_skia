@@ -233,6 +233,7 @@ func (b *TaskBuilder) asset(assets ...string) {
 func (b *TaskBuilder) usesBazel(hostOSArch string) {
 	archToPkg := map[string]string{
 		"linux_x64":   "bazelisk_linux_amd64",
+		"mac_arm64":   "bazelisk_mac_arm64",
 		"mac_x64":     "bazelisk_mac_amd64",
 		"windows_x64": "bazelisk_win_amd64",
 	}
@@ -253,7 +254,7 @@ func (b *TaskBuilder) usesCCache() {
 // shellsOutToBazel returns true if this task normally uses GN but some step
 // shells out to Bazel to build stuff, e.g. rust code.
 func (b *TaskBuilder) shellsOutToBazel() bool {
-	return b.ExtraConfig("Vello", "Fontations", "RustPNG")
+	return b.ExtraConfig("Fontations", "RustPNG", "ICU4X")
 }
 
 func (b *TaskBuilder) usesCMake() {
@@ -273,15 +274,7 @@ func (b *TaskBuilder) usesCMake() {
 // usesGit adds attributes to tasks which use git.
 func (b *TaskBuilder) usesGit() {
 	b.cache(CACHES_GIT...)
-	if b.IsWindows() {
-		b.cipd(specs.CIPD_PKGS_GIT_WINDOWS_AMD64...)
-	} else if b.IsMac() {
-		b.cipd(specs.CIPD_PKGS_GIT_MAC_AMD64...)
-	} else if b.IsLinux() {
-		b.cipd(specs.CIPD_PKGS_GIT_LINUX_AMD64...)
-	} else {
-		panic("Unknown host OS for " + b.Name)
-	}
+	b.cipd(setPkgPaths("cipd_bin_packages", specs.CIPD_PKGS_GIT...)...)
 	b.addToPATH("cipd_bin_packages", "cipd_bin_packages/bin")
 }
 
@@ -396,34 +389,10 @@ func (b *TaskBuilder) getRecipeProps() string {
 	return marshalJson(props)
 }
 
-// cipdPlatform returns the CIPD platform for this task.
-func (b *TaskBuilder) cipdPlatform() string {
-	os, arch := b.goPlatform()
-	if os == "darwin" {
-		os = "mac"
-	}
-	return os + "-" + arch
-}
-
 // usesPython adds attributes to tasks which use python.
 func (b *TaskBuilder) usesPython() {
-	// This is sort of a hack to work around the fact that the upstream CIPD
-	// package definitions separate out the platforms for some packages, which
-	// causes some complications when we don't know which platform we're going
-	// to run on, for example Android tasks which may run on RPI in our lab or
-	// on a Linux server elsewhere. Just grab an arbitrary set of Python
-	// packages and then replace the fixed platform with the `${platform}`
-	// placeholder. This does introduce the possibility of failure in cases
-	// where the package does not exist at a given tag for a given platform.
-	fakePlatform := cipd.PlatformLinuxAmd64
-	pythonPkgs, ok := cipd.PkgsPython[fakePlatform]
-	if !ok {
-		panic("No Python packages for platform " + fakePlatform)
-	}
-	for _, pkg := range pythonPkgs {
-		pkg.Name = strings.Replace(pkg.Name, fakePlatform, "${platform}", 1)
-	}
-	b.cipd(pythonPkgs...)
+	b.cipd(getCIPDPackage("infra/3pp/tools/cpython3/${platform}", "cipd_bin_packages/cpython3"))
+	b.cipd(getCIPDPackage("infra/tools/luci/vpython3/${platform}", "cipd_bin_packages"))
 	b.addToPATH(
 		"cipd_bin_packages/cpython3",
 		"cipd_bin_packages/cpython3/bin",
@@ -434,6 +403,22 @@ func (b *TaskBuilder) usesPython() {
 	})
 	b.envPrefixes("VPYTHON_VIRTUALENV_ROOT", "cache/vpython3")
 	b.env("VPYTHON_LOG_TRACE", "1")
+}
+
+func (b *TaskBuilder) usesXCode() {
+	b.cipd(&specs.CipdPackage{
+		Name: "infra/tools/mac_toolchain/${platform}",
+		Path: "mac_toolchain",
+		// When this is updated, also update
+		// https://skia.googlesource.com/skcms.git/+/f1e2b45d18facbae2dece3aca673fe1603077846/infra/bots/gen_tasks.go#56
+		// and
+		// https://skia.googlesource.com/skia.git/+/main/infra/bots/recipe_modules/xcode/api.py#38
+		Version: "git_revision:0cb1e51344de158f72524c384f324465aebbcef2",
+	})
+	b.Spec.Caches = append(b.Spec.Caches, &specs.Cache{
+		Name: "xcode",
+		Path: "cache/Xcode.app",
+	})
 }
 
 func (b *TaskBuilder) usesLUCIAuth() {

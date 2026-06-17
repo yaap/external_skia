@@ -1,5 +1,5 @@
 /*
-* Copyright 2017 Google Inc.
+* Copyright 2017 Google LLC
 *
 * Use of this source code is governed by a BSD-style license that can be
 * found in the LICENSE file.
@@ -684,8 +684,7 @@ void SkDevice::drawShadow(SkCanvas* canvas, const SkPath& path, const SkDrawShad
         // All else has failed, draw with blur
         if (!success) {
             // Pretransform the path to avoid transforming the stroke, below.
-            SkPath devSpacePath;
-            path.transform(canvas->getLocalToDeviceAs3x3(), &devSpacePath);
+            SkPath devSpacePath = path.makeTransform(canvas->getLocalToDeviceAs3x3());
             devSpacePath.setIsVolatile(true);
 
             // The tesselator outsets by AmbientBlurRadius (or 'r') to get the outer ring of

@@ -74,6 +74,7 @@
 #include "src/gpu/ganesh/effects/GrTextureEffect.h"
 #include "src/gpu/ganesh/gradients/GrGradientShader.h"
 #include "src/gpu/ganesh/image/GrImageUtils.h"
+#include "src/gpu/ganesh/image/GrMippedBitmap.h"
 #include "src/shaders/SkBlendShader.h"
 #include "src/shaders/SkColorFilterShader.h"
 #include "src/shaders/SkColorShader.h"
@@ -100,6 +101,7 @@
 #include <optional>
 #include <utility>
 
+class GrRenderTargetProxy;
 class SkBitmap;
 enum class SkTileMode;
 
@@ -443,8 +445,9 @@ static GrFPResult make_colorfilter_fp(skgpu::ganesh::SurfaceDrawContext* sdc,
                                       std::unique_ptr<GrFragmentProcessor> inputFP,
                                       const GrColorInfo&,
                                       const SkSurfaceProps&) {
-    auto cte = ColorTableEffect::Make(std::move(inputFP), sdc->recordingContext(),
-                                      filter->bitmap());
+    SkASSERT(filter->bitmap().isImmutable());
+    auto cte = ColorTableEffect::Make(
+            std::move(inputFP), sdc->recordingContext(), GrMippedBitmap(filter->bitmap()));
     return cte ? GrFPSuccess(std::move(cte)) : GrFPFailure(nullptr);
 }
 
@@ -673,11 +676,13 @@ static std::unique_ptr<GrFragmentProcessor> make_shader_fp(const SkPerlinNoiseSh
 
     auto permutationsView = std::get<0>(GrMakeCachedBitmapProxyView(
             context,
-            permutationsBitmap,
+            GrMippedBitmap(permutationsBitmap),
             /*label=*/"PerlinNoiseShader_FragmentProcessor_PermutationsView"));
 
-    auto noiseView = std::get<0>(GrMakeCachedBitmapProxyView(
-            context, noiseBitmap, /*label=*/"PerlinNoiseShader_FragmentProcessor_NoiseView"));
+    auto noiseView = std::get<0>(
+            GrMakeCachedBitmapProxyView(context,
+                                        GrMippedBitmap(noiseBitmap),
+                                        /*label=*/"PerlinNoiseShader_FragmentProcessor_NoiseView"));
 
     if (!permutationsView || !noiseView) {
         return nullptr;
@@ -763,8 +768,11 @@ static std::unique_ptr<GrFragmentProcessor> make_shader_fp(const SkPictureShader
         if (!image) {
             return nullptr;
         }
-
-        auto [v, ct] = skgpu::ganesh::AsView(ctx, image, skgpu::Mipmapped::kNo);
+        // Images from a picture shader shouldn't ever be drawn into a surface backed by the same
+        // texture so there will never be need to make a copy of the image. So just pass in nullptr
+        // for targetSurface of the view.
+        constexpr GrRenderTargetProxy* targetSurface = nullptr;
+        auto [v, ct] = skgpu::ganesh::AsView(ctx, image, skgpu::Mipmapped::kNo, targetSurface);
         view = std::move(v);
         provider->assignUniqueKeyToProxy(key, view.asTextureProxy());
     }

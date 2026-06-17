@@ -10,7 +10,6 @@
 #include "include/core/SkSamplingOptions.h"
 #include "include/core/SkTileMode.h"
 #include "include/gpu/graphite/BackendTexture.h"
-#include "src/core/SkTraceEvent.h"
 #include "src/gpu/graphite/Buffer.h"
 #include "src/gpu/graphite/Caps.h"
 #include "src/gpu/graphite/CommandBuffer.h"
@@ -19,7 +18,6 @@
 #include "src/gpu/graphite/ContextUtils.h"
 #include "src/gpu/graphite/GlobalCache.h"
 #include "src/gpu/graphite/GraphicsPipeline.h"
-#include "src/gpu/graphite/GraphicsPipelineDesc.h"
 #include "src/gpu/graphite/GraphicsPipelineHandle.h"
 #include "src/gpu/graphite/Log.h"
 #include "src/gpu/graphite/PipelineCreationTask.h"
@@ -35,16 +33,7 @@
 
 namespace skgpu::graphite {
 
-// This is only used when tracing is enabled at compile time.
-[[maybe_unused]] static std::string to_str(const SharedContext* ctx,
-                                           const GraphicsPipelineDesc& gpDesc,
-                                           const RenderPassDesc& rpDesc) {
-    const ShaderCodeDictionary* dict = ctx->shaderCodeDictionary();
-    const RenderStep* step = ctx->rendererProvider()->lookup(gpDesc.renderStepID());
-    return GetPipelineLabel(dict, rpDesc, step, gpDesc.paintParamsID());
-}
-
-ResourceProvider::ResourceProvider(SharedContext* sharedContext,\
+ResourceProvider::ResourceProvider(SharedContext* sharedContext,
                                    SingleOwner* singleOwner,
                                    uint32_t recorderID,
                                    size_t resourceBudget)
@@ -62,7 +51,7 @@ GraphicsPipelineHandle ResourceProvider::createGraphicsPipelineHandle(
 
     PipelineManager* pipelineManager = fSharedContext->pipelineManager();
 
-    return pipelineManager->createHandle(this,
+    return pipelineManager->createHandle(fSharedContext,
                                          pipelineDesc,
                                          renderPassDesc,
                                          pipelineCreationFlags);
@@ -72,83 +61,15 @@ void ResourceProvider::startPipelineCreationTask(sk_sp<const RuntimeEffectDictio
                                                  const GraphicsPipelineHandle& handle) {
     PipelineManager* pipelineManager = fSharedContext->pipelineManager();
 
-    pipelineManager->startPipelineCreationTask(this, std::move(runtimeDict), handle);
+    pipelineManager->startPipelineCreationTask(fSharedContext,
+                                               std::move(runtimeDict),
+                                               handle);
 }
 
 sk_sp<GraphicsPipeline> ResourceProvider::resolveHandle(const GraphicsPipelineHandle& handle) {
     PipelineManager* pipelineManager = fSharedContext->pipelineManager();
 
     return pipelineManager->resolveHandle(handle);
-}
-
-sk_sp<GraphicsPipeline> ResourceProvider::findGraphicsPipeline(
-        const UniqueKey& pipelineKey,
-        SkEnumBitMask<PipelineCreationFlags> pipelineCreationFlags,
-        uint32_t *compilationID) {
-
-    auto globalCache = fSharedContext->globalCache();
-
-    sk_sp<GraphicsPipeline> pipeline = globalCache->findGraphicsPipeline(pipelineKey,
-                                                                         pipelineCreationFlags,
-                                                                         compilationID);
-    if (pipeline && pipeline->didAsyncCompilationFail()) SK_UNLIKELY {
-        // If the pipeline failed, remove it from the cache and fall through to retry
-        globalCache->removeGraphicsPipeline(pipeline.get());
-        pipeline.reset();
-    }
-
-    return pipeline;
-}
-
-sk_sp<GraphicsPipeline> ResourceProvider::findOrCreateGraphicsPipeline(
-        const RuntimeEffectDictionary* runtimeDict,
-        const UniqueKey& pipelineKey,
-        const GraphicsPipelineDesc& pipelineDesc,
-        const RenderPassDesc& renderPassDesc,
-        SkEnumBitMask<PipelineCreationFlags> pipelineCreationFlags) {
-
-    uint32_t compilationID = 0;
-    sk_sp<GraphicsPipeline> pipeline = this->findGraphicsPipeline(pipelineKey,
-                                                                  pipelineCreationFlags,
-                                                                  &compilationID);
-    if (!pipeline) {
-        // Haven't encountered this pipeline, so create a new one. Since pipelines are shared
-        // across Recorders, we could theoretically create equivalent pipelines on different
-        // threads. If this happens, GlobalCache returns the first-through-gate pipeline and we
-        // discard the redundant pipeline. While this is wasted effort in the rare event of a race,
-        // it allows pipeline creation to be performed without locking the global cache.
-        // NOTE: The parameters to TRACE_EVENT are only evaluated inside an if-block when the
-        // category is enabled.
-        TRACE_EVENT1_ALWAYS(
-                "skia.shaders", "createGraphicsPipeline", "desc",
-                TRACE_STR_COPY(to_str(fSharedContext, pipelineDesc, renderPassDesc).c_str()));
-
-#if defined(SK_PIPELINE_LIFETIME_LOGGING)
-        bool forPrecompile =
-                SkToBool(pipelineCreationFlags & PipelineCreationFlags::kForPrecompilation);
-
-        static const char* kNames[2] = { "BeginBuildN", "BeginBuildP" };
-        TRACE_EVENT_INSTANT2("skia.gpu",
-                             TRACE_STR_STATIC(kNames[forPrecompile]),
-                             TRACE_EVENT_SCOPE_THREAD,
-                             "key", pipelineKey.hash(),
-                             "compilationID", compilationID);
-#endif
-
-        pipeline = this->createGraphicsPipeline(runtimeDict, pipelineKey,
-                                                pipelineDesc, renderPassDesc,
-                                                pipelineCreationFlags,
-                                                compilationID);
-        if (pipeline) {
-            auto globalCache = fSharedContext->globalCache();
-
-            globalCache->invokePipelineCallback(fSharedContext, pipelineDesc, renderPassDesc);
-            // TODO: Should we store a null pipeline if we failed to create one so that subsequent
-            // usage immediately sees that the pipeline cannot be created, vs. retrying every time?
-            pipeline = globalCache->addGraphicsPipeline(pipelineKey, std::move(pipeline));
-        }
-    }
-    return pipeline;
 }
 
 sk_sp<ComputePipeline> ResourceProvider::findOrCreateComputePipeline(
@@ -170,22 +91,14 @@ sk_sp<ComputePipeline> ResourceProvider::findOrCreateComputePipeline(
 sk_sp<Texture> ResourceProvider::findOrCreateShareableTexture(SkISize dimensions,
                                                               const TextureInfo& info,
                                                               std::string_view label) {
-    return this->findOrCreateTexture(dimensions,
-                                     info,
-                                     std::move(label),
-                                     Budgeted::kYes,
-                                     Shareable::kYes);
+    return this->findOrCreateTexture(dimensions, info, label, Budgeted::kYes, Shareable::kYes);
 }
 
 sk_sp<Texture> ResourceProvider::findOrCreateNonShareableTexture(SkISize dimensions,
                                                                  const TextureInfo& info,
                                                                  std::string_view label,
                                                                  Budgeted budgeted) {
-    return this->findOrCreateTexture(dimensions,
-                                     info,
-                                     std::move(label),
-                                     budgeted,
-                                     Shareable::kNo);
+    return this->findOrCreateTexture(dimensions, info, label, budgeted, Shareable::kNo);
 }
 
 sk_sp<Texture> ResourceProvider::findOrCreateScratchTexture(
@@ -193,12 +106,8 @@ sk_sp<Texture> ResourceProvider::findOrCreateScratchTexture(
         const TextureInfo& info,
         std::string_view label,
         const ResourceCache::ScratchResourceSet& unavailable) {
-    return this->findOrCreateTexture(dimensions,
-                                     info,
-                                     std::move(label),
-                                     Budgeted::kYes,
-                                     Shareable::kScratch,
-                                     &unavailable);
+    return this->findOrCreateTexture(
+            dimensions, info, label, Budgeted::kYes, Shareable::kScratch, &unavailable);
 }
 
 sk_sp<Texture> ResourceProvider::findOrCreateTexture(
@@ -225,29 +134,22 @@ sk_sp<Texture> ResourceProvider::findOrCreateTexture(
     fSharedContext->caps()->buildKeyForTexture(dimensions, info, kType, &key);
 
     if (Resource* resource =
-                fResourceCache->findAndRefResource(key, budgeted, shareable, unavailable)) {
-        resource->setLabel(std::move(label));
+                fResourceCache->findAndRefResource(key, budgeted, shareable, label, unavailable)) {
         return sk_sp<Texture>(static_cast<Texture*>(resource));
     }
 
-    auto tex = this->createTexture(dimensions, info);
-    if (!tex) {
-        return nullptr;
+    if (auto tex = this->createTexture(dimensions, info, label)) {
+        fResourceCache->insertResource(tex.get(), key, budgeted, shareable);
+        return tex;
     }
 
-    tex->setLabel(std::move(label));
-    fResourceCache->insertResource(tex.get(), key, budgeted, shareable);
-
-    return tex;
+    return nullptr;
 }
 
 sk_sp<Texture> ResourceProvider::createWrappedTexture(const BackendTexture& backendTexture,
                                                       std::string_view label) {
-    sk_sp<Texture> texture = this->onCreateWrappedTexture(backendTexture);
-    if (texture) {
-        texture->setLabel(std::move(label));
-        SkASSERT(texture->ownership() == Ownership::kWrapped);
-    }
+    sk_sp<Texture> texture = this->onCreateWrappedTexture(backendTexture, label);
+    SkASSERT(!texture || texture->ownership() == Ownership::kWrapped);
     return texture;
 }
 
@@ -283,12 +185,33 @@ sk_sp<Sampler> ResourceProvider::findOrCreateCompatibleSampler(const SamplerDesc
     return sampler;
 }
 
-sk_sp<Buffer> ResourceProvider::findOrCreateBuffer(size_t size,
-                                                   BufferType type,
-                                                   AccessPattern accessPattern,
-                                                   std::string_view label) {
+sk_sp<Buffer> ResourceProvider::findOrCreateNonShareableBuffer(size_t size,
+                                                               BufferType type,
+                                                               AccessPattern accessPattern,
+                                                               std::string_view label) {
+    return this->findOrCreateBuffer(size, type, accessPattern, label, Shareable::kNo);
+}
+
+sk_sp<Buffer> ResourceProvider::findOrCreateScratchBuffer(
+        size_t size,
+        BufferType type,
+        AccessPattern access,
+        std::string_view label,
+        const ResourceCache::ScratchResourceSet& unvailable) {
+    // Scratch buffers must be GPU only, mapped access makes it too difficult to scope their
+    // reads and writes within the actual command buffer execution.
+    SkASSERT(access != AccessPattern::kHostVisible);
+    return this->findOrCreateBuffer(size, type, access, label, Shareable::kScratch, &unvailable);
+}
+
+sk_sp<Buffer> ResourceProvider::findOrCreateBuffer(
+        size_t size,
+        BufferType type,
+        AccessPattern accessPattern,
+        std::string_view label,
+        Shareable shareable,
+        const ResourceCache::ScratchResourceSet* unavailable) {
     static constexpr Budgeted kBudgeted = Budgeted::kYes;
-    static constexpr Shareable kShareable = Shareable::kNo;
     static const ResourceType kType = GraphiteResourceKey::GenerateResourceType();
 
     GraphiteResourceKey key;
@@ -317,18 +240,17 @@ sk_sp<Buffer> ResourceProvider::findOrCreateBuffer(size_t size,
         }
     }
 
-    if (Resource* resource = fResourceCache->findAndRefResource(key, kBudgeted, kShareable)) {
-        resource->setLabel(std::move(label));
+    if (Resource* resource =
+            fResourceCache->findAndRefResource(key, kBudgeted, shareable, label, unavailable)) {
         return sk_sp<Buffer>(static_cast<Buffer*>(resource));
     }
-    auto buffer = this->createBuffer(size, type, accessPattern);
-    if (!buffer) {
-        return nullptr;
+
+    if (auto buffer = this->createBuffer(size, type, accessPattern, label)) {
+        fResourceCache->insertResource(buffer.get(), key, kBudgeted, shareable);
+        return buffer;
     }
 
-    buffer->setLabel(std::move(label));
-    fResourceCache->insertResource(buffer.get(), key, kBudgeted, kShareable);
-    return buffer;
+    return nullptr;
 }
 
 namespace {

@@ -159,7 +159,6 @@ void MtlCommandBuffer::addSignalSemaphores(size_t numSignalSemaphores,
 }
 
 bool MtlCommandBuffer::onAddRenderPass(const RenderPassDesc& renderPassDesc,
-                                       SkIRect renderPassBounds,
                                        const Texture* colorTexture,
                                        const Texture* resolveTexture,
                                        const Texture* depthStencilTexture,
@@ -207,7 +206,7 @@ bool MtlCommandBuffer::onAddComputePass(DispatchGroupSpan groups) {
             SkASSERT(fActiveComputeCommandEncoder);
             for (const ComputeStep::WorkgroupBufferDesc& wgBuf : dispatch.fWorkgroupBuffers) {
                 fActiveComputeCommandEncoder->setThreadgroupMemoryLength(
-                        SkAlignTo(wgBuf.size, 16),
+                        SkAlignTo(wgBuf.size, 16u),
                         wgBuf.index);
             }
             if (const WorkgroupSize* globalSize =
@@ -356,7 +355,7 @@ void MtlCommandBuffer::endRenderPass() {
 bool MtlCommandBuffer::addDrawPass(DrawPass* drawPass) {
     const SkIRect replayedBounds = drawPass->bounds().makeOffset(fReplayTranslation.x(),
                                                                  fReplayTranslation.y());
-    if (!SkIRect::Intersects(replayedBounds, fRenderPassBounds)) {
+    if (!SkIRect::Intersects(replayedBounds, fRenderTargetBounds)) {
         // The entire DrawPass is offscreen given the replay translation so skip adding any
         // commands. When the DrawPass is partially offscreen individual draw commands will be
         // culled while preserving state changing commands.
@@ -549,11 +548,8 @@ void MtlCommandBuffer::bindUniformBuffer(const BindBufferInfo& info, UniformSlot
 
     unsigned int bufferIndex;
     switch(slot) {
-        case UniformSlot::kRenderStep:
-            bufferIndex = MtlGraphicsPipeline::kRenderStepUniformBufferIndex;
-            break;
-        case UniformSlot::kPaint:
-            bufferIndex = MtlGraphicsPipeline::kPaintUniformBufferIndex;
+        case UniformSlot::kCombinedUniforms:
+            bufferIndex = MtlGraphicsPipeline::kCombinedUniformIndex;
             break;
         case UniformSlot::kGradient:
             bufferIndex = MtlGraphicsPipeline::kGradientBufferIndex;
@@ -608,7 +604,7 @@ void MtlCommandBuffer::bindTextureAndSampler(const Texture* texture,
 void MtlCommandBuffer::setScissor(const Scissor& scissor) {
     SkASSERT(fActiveRenderCommandEncoder);
 
-    SkIRect rect = scissor.getRect(fReplayTranslation, fRenderPassBounds);
+    SkIRect rect = scissor.getRect(fReplayTranslation, fRenderTargetBounds);
     fDrawIsOffscreen = rect.isEmpty();
 
     fActiveRenderCommandEncoder->setScissorRect({

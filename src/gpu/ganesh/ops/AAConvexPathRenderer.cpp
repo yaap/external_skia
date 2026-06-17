@@ -702,7 +702,7 @@ std::unique_ptr<GrGeometryProcessor::ProgramImpl> QuadEdgeEffect::makeProgramImp
             fragBuilder->codeAppendf("edgeAlpha = half(%s.x*%s.x - %s.y);", v.fsIn(), v.fsIn(),
                                      v.fsIn());
             fragBuilder->codeAppendf("edgeAlpha = "
-                                     "saturate(0.5 - edgeAlpha / length(gF));}");
+                                     "saturate(0.5 - edgeAlpha / max(length(gF), 1e-6));}");
 
             fragBuilder->codeAppendf("half4 %s = half4(edgeAlpha);", args.fOutputCoverage);
         }
@@ -832,11 +832,10 @@ private:
             const SkPath* pathPtr = &args.fPath;
             std::optional<SkPath> tmpPath;
             if (viewMatrix->hasPerspective()) {
-                SkPath* tmpPathPtr = &tmpPath.emplace(*pathPtr);
-                tmpPathPtr->setIsVolatile(true);
-                tmpPathPtr->transform(*viewMatrix);
+                tmpPath.emplace(pathPtr->makeTransform(*viewMatrix));
+                tmpPath->setIsVolatile(true);
+                pathPtr = &tmpPath.value();
                 viewMatrix = &SkMatrix::I();
-                pathPtr = tmpPathPtr;
             }
 
             int vertexCount;
@@ -860,7 +859,7 @@ private:
                                                           &vertexBuffer,
                                                           &firstVertex);
 
-            if (!verts) {
+            if (!verts) SK_UNLIKELY {
                 SkDebugf("Could not allocate vertices\n");
                 return;
             }
@@ -869,7 +868,7 @@ private:
             int firstIndex;
 
             uint16_t *idxs = target->makeIndexSpace(indexCount, &indexBuffer, &firstIndex);
-            if (!idxs) {
+            if (!idxs) SK_UNLIKELY {
                 SkDebugf("Could not allocate indices\n");
                 return;
             }

@@ -81,7 +81,7 @@ PNG_PUBLIC_HDRS = [
 ]
 
 skia_filegroup(
-    name = "png_public_hdrs",
+    name = "libpng_public_hdrs",
     srcs = PNG_PUBLIC_HDRS,
     visibility = ["//src/codec:__pkg__"],
 )
@@ -89,7 +89,7 @@ skia_filegroup(
 skia_filegroup(
     name = "rust_png_public_hdrs",
     srcs = ["SkPngRustDecoder.h"],
-    visibility = ["//experimental/rust_png/decoder:__pkg__"],
+    visibility = ["//src/codec:__pkg__"],
 )
 
 WBMP_PUBLIC_HDRS = ["SkWbmpDecoder.h"]

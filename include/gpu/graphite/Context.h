@@ -31,6 +31,7 @@
 
 class SkColorInfo;
 class SkSurface;
+class SkCapture;
 enum SkYUVColorSpace : int;
 class SkColorSpace;
 class SkTraceMemoryDump;
@@ -54,11 +55,13 @@ class Buffer;
 class ClientMappedBufferManager;
 class ContextPriv;
 struct ContextOptions;
+class PersistentPipelineStorage;
 class PrecompileContext;
 class QueueManager;
 class ResourceProvider;
 class SharedContext;
 class TextureProxy;
+class TextureProxyView;
 
 class SK_API Context final {
 public:
@@ -80,10 +83,13 @@ public:
     std::unique_ptr<PrecompileContext> makePrecompileContext();
 
     InsertStatus insertRecording(const InsertRecordingInfo&);
-    bool submit(SyncToCpu = SyncToCpu::kNo);
+    bool submit(SubmitInfo submitInfo = {});
 
     /** Returns true if there is work that was submitted to the GPU that has not finished. */
     bool hasUnfinishedGpuWork() const;
+
+    /** Returns true if there is pending GPU work that needs to be submitted. */
+    bool hasPendingGPUWork() const;
 
     /** Makes image pixel data available to caller, possibly asynchronously. It can also rescale
         the image pixels.
@@ -277,6 +283,16 @@ public:
      */
     GpuStatsFlags supportedGpuStats() const;
 
+    /**
+     * If supported by the backend, stores the current pipeline cache data into the
+     * PersistentPipelineStorage-derived object passed into Graphite via
+     * ContextOptions::fPersistentPipelineStorage. The amount stored is limited to 'maxSize'.
+     *
+     * Skia attempts to only call store() on the PersistentPipelineStorage object when the data
+     * is likely to be different from what was last sync'ed.
+     */
+    void syncPipelineData(size_t maxSize = SIZE_MAX);
+
     /*
      * TODO (b/412351769): Do not use startCapture() or endCapture() as the feature is still under
      * development.
@@ -288,7 +304,7 @@ public:
     /*
      * Ends the SkCapture and returns the collected draws and surface creation.
      */
-    void endCapture();
+    sk_sp<SkCapture> endCapture();
 
     // Provides access to functions that aren't part of the public API.
     ContextPriv priv();
@@ -370,14 +386,14 @@ private:
     // Like asyncReadPixels() except it performs no fallbacks, and requires that the texture be
     // readable. However, the texture does not need to be sampleable.
     void asyncReadTexture(std::unique_ptr<Recorder>,
-                          const AsyncParams<TextureProxy>&,
+                          const AsyncParams<TextureProxyView>&,
                           const SkColorInfo& srcColorInfo);
 
     // Inserts a texture to buffer transfer task, used by asyncReadPixels methods. If the
     // Recorder is non-null, tasks will be added to the Recorder's list; otherwise the transfer
     // tasks will be added to the queue manager directly.
     PixelTransferResult transferPixels(Recorder*,
-                                       const TextureProxy* srcProxy,
+                                       const TextureProxyView& srcView,
                                        const SkColorInfo& srcColorInfo,
                                        const SkColorInfo& dstColorInfo,
                                        const SkIRect& srcRect);
@@ -391,9 +407,11 @@ private:
 
     sk_sp<SharedContext> fSharedContext;
     std::unique_ptr<ResourceProvider> fResourceProvider;
-    std::unique_ptr<QueueManager> fQueueManager;
     std::unique_ptr<ClientMappedBufferManager> fMappedBufferManager;
+    std::unique_ptr<QueueManager> fQueueManager;
     std::unique_ptr<const skcpu::ContextImpl> fCPUContext;
+
+    PersistentPipelineStorage* fPersistentPipelineStorage;
 
     // In debug builds we guard against improper thread handling. This guard is passed to the
     // ResourceCache for the Context.

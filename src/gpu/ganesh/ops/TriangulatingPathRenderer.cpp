@@ -150,7 +150,9 @@ public:
         SkASSERT(!fLockStride && !fVertices && !fVertexBuffer && !fVertexData);
         SkASSERT(stride && eagerCount);
 
-        size_t size = eagerCount * stride;
+        // Matches sk_malloc_throw(stride, count) but lets use the size earlier.
+        size_t size = SkSafeMath::Mul(eagerCount, stride);
+
         fVertexBuffer = fResourceProvider->createBuffer(size,
                                                         GrGpuBufferType::kVertex,
                                                         kStatic_GrAccessPattern,
@@ -162,7 +164,7 @@ public:
             fVertices = fVertexBuffer->map();
         }
         if (!fVertices) {
-            fVertices = sk_malloc_throw(eagerCount * stride);
+            fVertices = sk_malloc_throw(size);
             fCanMapVB = false;
         }
         fLockStride = stride;
@@ -388,12 +390,11 @@ private:
     void createAAMesh(GrMeshDrawTarget* target) {
         SkASSERT(!fVertexData);
         SkASSERT(fAntiAlias);
-        SkPath path = this->getPath();
+        SkPath path = this->getPath().makeTransform(fViewMatrix);
         if (path.isEmpty()) {
             return;
         }
         SkRect clipBounds = SkRect::Make(fDevClipBounds);
-        path.transform(fViewMatrix);
         SkScalar tol = GrPathUtils::kDefaultTolerance;
         sk_sp<const GrBuffer> vertexBuffer;
         int firstVertex;

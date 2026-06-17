@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC
  *
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
@@ -711,10 +711,7 @@ SkPath SkSVGText::onAsPath(const SkSVGRenderContext& ctx) const {
         this->onShapeText(ctx, &tctx, this->getXmlSpace());
     }
 
-    auto path = builder.detach();
-    this->mapToParent(&path);
-
-    return path;
+    return this->mapToParent(builder.detach());
 }
 
 void SkSVGTextPath::onShapeText(const SkSVGRenderContext& ctx, SkSVGTextContext* parent_tctx,

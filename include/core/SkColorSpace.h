@@ -19,11 +19,6 @@
 
 class SkData;
 
-// This is defined to avoid multiple conflicting definitions of operator== for
-// the SkColorSpacePrimaries struct.
-// TODO(https://issues.skia.org/issues/40044808): Remove this.
-#define SKIA_COLOR_SPACE_PRIMARIES_OPERATOR_EQUAL
-
 /**
  *  Describes a color gamut with primaries and a white point.
  */
@@ -43,14 +38,15 @@ struct SK_API SkColorSpacePrimaries {
      */
     bool toXYZD50(skcms_Matrix3x3* toXYZD50) const;
 
-    bool operator==(const SkColorSpacePrimaries& v) const {
-        return fRX == v.fRX && fRY == v.fRY && fGX == v.fGX && fGY == v.fGY &&
-               fBX == v.fBX && fBY == v.fBY && fWX == v.fWX && fWY == v.fWY;
-    }
-    bool operator!=(const SkColorSpacePrimaries& v) const {
-        return !(*this == v);
+    bool operator==(const SkColorSpacePrimaries& other) const {
+        return fRX == other.fRX && fRY == other.fRY && fGX == other.fGX && fGY == other.fGY &&
+               fBX == other.fBX && fBY == other.fBY && fWX == other.fWX && fWY == other.fWY;
     }
 };
+
+// TODO(https://issuetracker.google.com/issues/40044808): Remove this when no longer needed by
+// Chromium.
+#define SKIA_COLOR_SPACE_PRIMARIES_OPERATOR_EQUAL
 
 namespace SkNamedPrimaries {
 

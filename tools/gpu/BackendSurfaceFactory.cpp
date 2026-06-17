@@ -7,13 +7,14 @@
 
 #include "tools/gpu/BackendSurfaceFactory.h"
 
-#if defined(SK_GANESH)
 #include "include/core/SkSurface.h"
+#include "tools/gpu/ManagedBackendTexture.h"
+
+#if defined(SK_GANESH)
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
 #include "src/gpu/ganesh/GrDirectContextPriv.h"
 #include "src/gpu/ganesh/GrGpu.h"
-#include "tools/gpu/ManagedBackendTexture.h"
 #endif
 
 #if defined(SK_GRAPHITE)
@@ -27,6 +28,7 @@
 #endif
 
 namespace sk_gpu_test {
+
 #if defined(SK_GANESH)
 sk_sp<SkSurface> MakeBackendTextureSurface(GrDirectContext* dContext,
                                            const SkImageInfo& ii,
@@ -137,7 +139,6 @@ sk_sp<SkSurface> MakeBackendTextureSurface(skgpu::graphite::Recorder* recorder,
     }
     return SkSurfaces::WrapBackendTexture(recorder,
                                           mbet->texture(),
-                                          ii.colorType(),
                                           ii.refColorSpace(),
                                           props,
                                           ManagedGraphiteTexture::ReleaseProc,
@@ -177,7 +178,7 @@ sk_sp<SkSurface> MakeBackendTextureViewSurface(skgpu::graphite::Recorder* record
     textureInfo.fAspect      = wgpu::TextureAspect::All;
     textureInfo.fFormat      = texture.GetFormat();
     textureInfo.fMipmapped   = mipmapped;
-    textureInfo.fSampleCount = texture.GetSampleCount();
+    textureInfo.fSampleCount = skgpu::graphite::ToSampleCount(texture.GetSampleCount());
     textureInfo.fUsage       = texture.GetUsage();
 
     skgpu::graphite::BackendTexture betFromView =
@@ -187,12 +188,10 @@ sk_sp<SkSurface> MakeBackendTextureViewSurface(skgpu::graphite::Recorder* record
 
     return SkSurfaces::WrapBackendTexture(recorder,
                                           betFromView,
-                                          ii.colorType(),
                                           ii.refColorSpace(),
                                           props,
                                           release,
                                           mbet.release());
-    return nullptr;
 }
 #endif // SK_DAWN
 

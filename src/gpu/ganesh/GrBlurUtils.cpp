@@ -85,6 +85,7 @@
 #include "src/gpu/ganesh/effects/GrSkSLFP.h"
 #include "src/gpu/ganesh/effects/GrTextureEffect.h"
 #include "src/gpu/ganesh/geometry/GrStyledShape.h"
+#include "src/gpu/ganesh/image/GrMippedBitmap.h"
 
 #include <algorithm>
 #include <array>
@@ -189,12 +190,14 @@ static GrSurfaceProxyView sw_create_filtered_mask(GrRecordingContext* rContext,
 
         // TODO: it seems like we could create an skcpu::Draw here and set its fMatrix field rather
         // than explicitly transforming the path to device space.
-        SkPath devPath = shape.asPath();
-
-        devPath.transform(viewMatrix);
+        SkPath devPath = shape.asPath().makeTransform(viewMatrix);
+        const auto raw = SkPathPriv::Raw(devPath, SkResolveConvexity::kYes);
+        if (!raw) {
+            return {};
+        }
 
         SkMaskBuilder srcM, dstM;
-        if (!skcpu::DrawToMask(devPath,
+        if (!skcpu::DrawToMask(*raw,
                                clipBounds,
                                filter,
                                &viewMatrix,
@@ -219,15 +222,18 @@ static GrSurfaceProxyView sw_create_filtered_mask(GrRecordingContext* rContext,
 
         // we now have a device-aligned 8bit mask in dstM, ready to be drawn using
         // the current clip (and identity matrix) and GrPaint settings
-        SkBitmap bm;
-        if (!bm.installPixels(SkImageInfo::MakeA8(dstM.fBounds.width(), dstM.fBounds.height()),
-                              autoDst.release(), dstM.fRowBytes, mask_release_proc, nullptr)) {
+        std::optional<GrMippedBitmap> bm = GrMippedBitmap::Make(
+                SkImageInfo::MakeA8(dstM.fBounds.width(), dstM.fBounds.height()),
+                autoDst.release(),
+                dstM.fRowBytes,
+                mask_release_proc,
+                nullptr);
+        if (!bm) {
             return {};
         }
-        bm.setImmutable();
 
         std::tie(filteredMaskView, std::ignore) = GrMakeUncachedBitmapProxyView(
-                rContext, bm, skgpu::Mipmapped::kNo, SkBackingFit::kApprox);
+                rContext, bm.value(), skgpu::Mipmapped::kNo, SkBackingFit::kApprox);
         if (!filteredMaskView) {
             return {};
         }
@@ -485,7 +491,7 @@ static std::unique_ptr<GrFragmentProcessor> create_profile_effect(GrRecordingCon
         bm = skgpu::CreateCircleProfile(sigma * scale, circleR * scale, kProfileTextureWidth);
     }
 
-    profileView = std::get<0>(GrMakeUncachedBitmapProxyView(rContext, bm));
+    profileView = std::get<0>(GrMakeUncachedBitmapProxyView(rContext, GrMippedBitmap(bm)));
     if (!profileView) {
         return nullptr;
     }
@@ -559,12 +565,12 @@ static std::unique_ptr<GrFragmentProcessor> make_rect_integral_fp(GrRecordingCon
                 std::move(view), kPremul_SkAlphaType, m, GrSamplerState::Filter::kLinear);
     }
 
-    SkBitmap bitmap = skgpu::CreateIntegralTable(width);
-    if (bitmap.empty()) {
+    SkBitmap bm = skgpu::CreateIntegralTable(width);
+    if (bm.empty()) {
         return {};
     }
 
-    view = std::get<0>(GrMakeUncachedBitmapProxyView(rContext, bitmap));
+    view = std::get<0>(GrMakeUncachedBitmapProxyView(rContext, GrMippedBitmap(bm)));
     if (!view) {
         return {};
     }
@@ -579,9 +585,9 @@ static std::unique_ptr<GrFragmentProcessor> make_rect_integral_fp(GrRecordingCon
 std::unique_ptr<GrFragmentProcessor> MakeRectBlur(GrRecordingContext* context,
                                                   const GrShaderCaps& caps,
                                                   const SkRect& srcRect,
+                                                  const std::optional<SkRect>& devRect,
                                                   const SkMatrix& viewMatrix,
                                                   float transformedSigma) {
-    SkASSERT(viewMatrix.preservesRightAngles());
     SkASSERT(srcRect.isSorted());
 
     if (skgpu::BlurIsEffectivelyIdentity(transformedSigma)) {
@@ -591,7 +597,11 @@ std::unique_ptr<GrFragmentProcessor> MakeRectBlur(GrRecordingContext* context,
 
     SkMatrix invM;
     SkRect rect;
-    if (viewMatrix.rectStaysRect()) {
+    if (devRect.has_value()) {
+        invM = SkMatrix::I();
+        rect = *devRect;
+    } else if (viewMatrix.rectStaysRect()) {
+        SkASSERT(viewMatrix.preservesRightAngles());
         invM = SkMatrix::I();
         // We can do everything in device space when the src rect projects to a rect in device space
         SkAssertResult(viewMatrix.mapRect(&rect, srcRect));
@@ -811,7 +821,7 @@ static GrSurfaceProxyView create_mask_on_cpu(GrRecordingContext* rContext,
         return {};
     }
 
-    auto view = std::get<0>(GrMakeUncachedBitmapProxyView(rContext, result));
+    auto view = std::get<0>(GrMakeUncachedBitmapProxyView(rContext, GrMippedBitmap(result)));
     if (!view) {
         return {};
     }
@@ -1048,16 +1058,18 @@ static bool direct_filter_mask(GrRecordingContext* context,
 
     auto devRRect = srcRRect.transform(viewMatrix);
 
+    bool devRRectIsRect = devRRect.has_value() && (*devRRect).isRect();
     bool devRRectIsCircle = devRRect.has_value() && SkRRectPriv::IsCircle(*devRRect);
 
-    bool canBeRect = srcRRect.isRect() && viewMatrix.preservesRightAngles();
+    bool canBeRect = (srcRRect.isRect() && viewMatrix.preservesRightAngles()) || devRRectIsRect;
     bool canBeCircle = (SkRRectPriv::IsCircle(srcRRect) && viewMatrix.isSimilarity()) ||
                        devRRectIsCircle;
 
     if (canBeRect || canBeCircle) {
         if (canBeRect) {
-            fp = MakeRectBlur(context, *context->priv().caps()->shaderCaps(),
-                                srcRRect.rect(), viewMatrix, xformedSigma);
+            fp = MakeRectBlur(context, *context->priv().caps()->shaderCaps(), srcRRect.rect(),
+                              devRRectIsRect ? std::optional((*devRRect).rect()) : std::nullopt,
+                              viewMatrix, xformedSigma);
         } else {
             SkRect devBounds;
             if (devRRectIsCircle) {
@@ -1101,6 +1113,7 @@ static bool direct_filter_mask(GrRecordingContext* context,
     if (!viewMatrix.rectStaysRect()) {
         return false;
     }
+
     if (!devRRect.has_value() || !SkRRectPriv::AllCornersCircular(*devRRect)) {
         return false;
     }

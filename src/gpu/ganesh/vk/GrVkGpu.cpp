@@ -162,8 +162,7 @@ std::unique_ptr<GrGpu> GrVkGpu::Make(const skgpu::VulkanBackendContext& backendC
         // We were not given a memory allocator at creation
         memoryAllocator =
                 skgpu::VulkanMemoryAllocators::Make(backendContext,
-                                                    skgpu::ThreadSafe::kNo,
-                                                    options.fVulkanVMALargeHeapBlockSize);
+                                                    skgpu::ThreadSafe::kNo);
     }
 #endif
     if (!memoryAllocator) {
@@ -1291,7 +1290,7 @@ static bool check_image_info(const GrVkCaps& caps,
         if (!caps.supportsYcbcrConversion()) {
             return false;
         }
-        if (info.fYcbcrConversionInfo.fExternalFormat != 0) {
+        if (info.fYcbcrConversionInfo.hasExternalFormat()) {
             return true;
         }
     }
@@ -1311,7 +1310,7 @@ static bool check_tex_image_info(const GrVkCaps& caps, const GrVkImageInfo& info
         return false;
     }
 
-    if (info.fYcbcrConversionInfo.isValid() && info.fYcbcrConversionInfo.fExternalFormat != 0) {
+    if (info.fYcbcrConversionInfo.isValid() && info.fYcbcrConversionInfo.hasExternalFormat()) {
         return true;
     }
     if (info.fImageTiling == VK_IMAGE_TILING_OPTIMAL) {

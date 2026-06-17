@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google LLC.
+ * Copyright 2019 Google LLC
  *
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
@@ -17,16 +17,6 @@
 #endif
 
 namespace skiagm {
-
-#define ERR_MSG_ASSERT(COND) \
-    do { \
-        if (!(COND)) { \
-            errorMsg->printf("preservefillrule.cpp(%i): assert(%s)", \
-                             __LINE__, #COND); \
-            return DrawResult::kFail; \
-        } \
-    } while (false)
-
 
 /**
  * This test originally ensured that the ccpr path cache preserved fill rules properly. CCPR is gone
@@ -55,17 +45,15 @@ private:
         SkPath star7_winding = ToolUtils::make_star(starRect, 7);
         star7_winding.setFillType(SkPathFillType::kWinding);
 
-        SkPath star7_evenOdd = star7_winding;
-        star7_evenOdd.transform(SkMatrix::Translate(0, fStarSize));
-        star7_evenOdd.setFillType(SkPathFillType::kEvenOdd);
+        SkPath star7_evenOdd = star7_winding.makeTransform(SkMatrix::Translate(0, fStarSize))
+                                            .makeFillType(SkPathFillType::kEvenOdd);
 
-        SkPath star5_winding = ToolUtils::make_star(starRect, 5);
-        star5_winding.transform(SkMatrix::Translate(fStarSize, 0));
-        star5_winding.setFillType(SkPathFillType::kWinding);
+        SkPath star5_winding = ToolUtils::make_star(starRect, 5)
+                               .makeTransform(SkMatrix::Translate(fStarSize, 0))
+                               .makeFillType(SkPathFillType::kWinding);
 
-        SkPath star5_evenOdd = star5_winding;
-        star5_evenOdd.transform(SkMatrix::Translate(0, fStarSize));
-        star5_evenOdd.setFillType(SkPathFillType::kEvenOdd);
+        SkPath star5_evenOdd = star5_winding.makeTransform(SkMatrix::Translate(0, fStarSize))
+                                            .makeFillType(SkPathFillType::kEvenOdd);
 
         SkPaint paint;
         paint.setColor(SK_ColorGREEN);

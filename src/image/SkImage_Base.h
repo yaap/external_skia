@@ -110,7 +110,7 @@ public:
 
     virtual sk_sp<SkImage> onMakeSubset(SkRecorder*, const SkIRect&, RequiredProperties) const = 0;
 
-    virtual sk_sp<SkData> onRefEncoded() const { return nullptr; }
+    virtual sk_sp<const SkData> onRefEncoded() const { return nullptr; }
 
     virtual bool onAsLegacyBitmap(GrDirectContext*, SkBitmap*) const;
 
@@ -123,6 +123,7 @@ public:
         kRasterPinnable,
         kLazy,
         kLazyPicture,
+        kLazyTexture,
         kGanesh,
         kGaneshYUVA,
         kGraphite,
@@ -133,7 +134,8 @@ public:
 
     // True for picture-backed and codec-backed
     bool isLazyGenerated() const override {
-        return this->type() == Type::kLazy || this->type() == Type::kLazyPicture;
+        return this->type() == Type::kLazy || this->type() == Type::kLazyPicture ||
+               this->type() == Type::kLazyTexture;
     }
 
     bool isRasterBacked() const {

@@ -57,9 +57,8 @@ static inline sk_sp<SkUnicode> BestAvailableUnicode() {
 #if defined(SK_SHAPER_HARFBUZZ_AVAILABLE)
 class HarfbuzzFactory final : public Factory {
 public:
-    HarfbuzzFactory(sk_sp<SkUnicode> uc = nullptr)
-        : fUnicode(uc ? std::move(uc) : BestAvailableUnicode())
-    {}
+    explicit HarfbuzzFactory(sk_sp<SkUnicode> uc = nullptr)
+            : fUnicode(uc ? std::move(uc) : BestAvailableUnicode()) {}
 
     std::unique_ptr<SkShaper> makeShaper(sk_sp<SkFontMgr> fallback) override {
         return SkShapers::HB::ShaperDrivenWrapper(fUnicode, fallback);
@@ -87,8 +86,13 @@ private:
 
 #if defined(SK_SHAPER_CORETEXT_AVAILABLE)
 class CoreTextFactory final : public Factory {
+public:
+    explicit CoreTextFactory(CT::LineBreakMode lbm = CT::LineBreakMode::kDefault)
+        : fLineBreakMode(lbm) {}
+
+private:
     std::unique_ptr<SkShaper> makeShaper(sk_sp<SkFontMgr>) override {
-        return SkShapers::CT::CoreText();
+        return SkShapers::CT::CoreText(fLineBreakMode);
     }
     std::unique_ptr<SkShaper::BiDiRunIterator> makeBidiRunIterator(const char* utf8,
                                                                 size_t utf8Bytes,
@@ -101,6 +105,8 @@ class CoreTextFactory final : public Factory {
         return std::make_unique<SkShaper::TrivialScriptRunIterator>(0, 0);
     }
     SkUnicode* getUnicode() override { return nullptr; }
+
+    const CT::LineBreakMode fLineBreakMode;
 };
 #endif  // defined(SK_SHAPER_CORETEXT_AVAILABLE)
 
@@ -122,6 +128,6 @@ inline sk_sp<Factory> BestAvailable() {
 #endif
 }
 
-};  // namespace SkShapers
+}  // namespace SkShapers
 
 #endif  // SkShaperFactoryHelpers_DEFINED
